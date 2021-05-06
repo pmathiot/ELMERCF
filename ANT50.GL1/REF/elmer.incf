@@ -1,0 +1,26 @@
+!###################### FILE ########################
+!
+! define simulation name
+$name="<CONFIG>-<CASE>"
+!
+! define data_dir
+$data_dir = "/scratch/cnt0021/egi6035/pmathiot/ELMER/<CONFIG>/<CONFIG>-I/"
+!
+! define output_dir
+$out_dir = "/scratch/cnt0021/egi6035/pmathiot/ELMER/<CONFIG>/<CONFIG>-<CASE>/<CONFIG>-<CASE>_S/"
+!
+! define build dir
+$bld_dir = "/home/pmathiot/ELMER/<CONFIG>/BLD/"
+!
+! define the PICO file
+$file_pico = "boxmodel/DATA_boxmodel.nc"
+!
+! define interpolation file
+$file_elmertonemo = "ELMER_<CONFIG>_to_eORCA025_coord_c3.0.nc"
+!
+! define basin file
+$file_basins = "schmidtko_initmip8km_means.nc"
+!
+! define bmb file
+$file_bmb = "melt_cons.nc"
+$var_bmb = "sowflisf_cav"
