@@ -31,14 +31,15 @@ Simulation
   Grounding Line Melt = Logical False
 
   Simulation Type = Transient
+  Simulation Timing = Logical True
 
   Timestepping Method = "bdf"
   BDF Order = 2
   Output Intervals(1) = 0
   Timestep Intervals(1) = 5
-  Timestep Sizes(1) = 2.0e-3
+  Timestep Sizes(1) = 1.0e-2
 
-  Steady State Max Iterations = 1
+  Steady State Max Iterations = 2
   Steady State Min Iterations = 1
   
   OutPut File = "<RSTFILEa>"
@@ -46,8 +47,9 @@ Simulation
 
   Restart File = "<RSTFILEb>"
   Restart Position = 0
+  Restart Time = Real 0.0
 
-  max output level = 3 
+  max output level = 10 
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body 1
@@ -66,7 +68,6 @@ Body Force 1
   Bottom Surface Accumulation = Variable Melt
      REAL PROCEDURE "USFs_Ronnie_inversion" "MinusA"
 
- 
   Water Pressure = Variable Zb
     Real procedure "USF_WaterPressure" "WaterPressure"
   distGL = Real 0.0  ! used in Solver DistanceSolver1
@@ -108,8 +109,21 @@ Material 1
 End
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!! Apply flotaison; from H compute Zb and Zs
 Solver 1
+   Exec Solver = Before all
+   Equation = "point"
+   Variable = -nooutput "dumy"
+
+   procedure = "nearestpoint" "nearestpoint"
+   Exported Variable 1 = -dofs 1 -elem basins
+   !Exported Variable 1 = -dofs 1  basins
+
+   Variable 1 = File "basins"
+   Target Variable 1 = String "basins"
+   Variable 1 data file = File "$data_dir$/$file_basins$"
+End
+!! Apply flotaison; from H compute Zb and Zs
+Solver 2
    Equation = "Flotation"
    Variable = GroundedMask
       Procedure = "Flotation2" "Flotation2"
@@ -125,21 +139,21 @@ Solver 1
 !
 End
 
-Solver 2
+Solver 3
   Equation = "distance GL"
   Variable = -dofs 1 distGL
     Procedure = "DistanceSolve" "DistanceSolver1"
   Optimize Bandwidth = logical False
 End
 
-Solver 3
+Solver 4
   Equation = "FrontMask"
   Variable = FrontMask
   Variable DOFs = 1
     Procedure = "FrontThickness_mask" "FrontThickness_mask"
 End
 
-Solver 4
+Solver 5
   Equation = "Real distance IF"
   Variable = -dofs 1 distIF
     Procedure = "DistanceSolve" "DistanceSolver1"
@@ -147,17 +161,6 @@ Solver 4
   Exported variable 1 = -dofs 1 distIF
 End
 
-Solver 5
-   Equation = "point"
-   Variable = -nooutput "dumy"
-
-   procedure = "nearestpoint" "nearestpoint"
-   Exported Variable 1 = -dofs 1 -elem basins
-
-   Variable 1 = File "basins"
-   Target Variable 1 = String "basins"
-   Variable 1 data file = File "$data_dir$/$file_basins$"
-End
 
 !#-----------------------------------------------------------------------
 !# SOLVER to read ice shelf melt from netcdf file (typically NEMO output)
@@ -179,9 +182,9 @@ Solver 6
 
    Optimize Bandwidth = False
 
-   File Name = File "$data_dir$/$file_bmb"
+   File Name = File "$data_dir$/$file_bmb$"
 
-   Variable Name = File "$var_bmb"
+   Variable Name = File "$var_bmb$"
 
    Target Variable Name = String "Melt"
    Exported Variable 1 = -elem "Melt"
@@ -206,7 +209,10 @@ Solver 7
 
   Sub-Element GL parameterization = Logical True
   GL integration points number = Integer 20
-
+  
+  Bulk Assembly Timing = Logical True
+  Linear System Timing = Logical True
+  Linear System Timing Cumulative = Logical True
 !
     Steady State Convergence Tolerance = 2.0
 !
@@ -225,11 +231,16 @@ Solver 8
 
   Procedure = "ElmerIceSolvers" "ThicknessSolver"
 
-   Linear System Solver = Direct
-   Linear System Direct Method = cpardiso
+  !include LINEAR_SOLVER.txt
 
-    Linear System Convergence Tolerance = 1.0e-12
-
+    Linear System Solver = Iterative
+    Linear System Iterative Method = "BiCGStab"
+    Linear System Max Iterations = 1000
+    Linear System Convergence Tolerance = 1.0E-12
+    Linear System Abort Not Converged = True
+    Linear System Residual Output = 1
+    Linear System Preconditioning = "ILU2"
+   
    ! equation is linear if no min/max
     Nonlinear System Max Iterations = 15
     Nonlinear System Convergence Tolerance  = 1.0e-08
@@ -245,6 +256,10 @@ Solver 8
 
 !!  the convection velocity (mean horizontal velocity)
     Flow Solution Name = String "SSAVelocity"
+    
+    Bulk Assembly Timing = Logical True
+    Linear System Timing = Logical True
+    Linear System Timing Cumulative = Logical True
 End
 
 Solver 9
@@ -300,49 +315,37 @@ Solver 9
 End
 
 Solver 10
+  Exec Interval = $SCALARS_INTERVAL
   Exec Solver = After Timestep
   Equation = "Save INITMIP"
     Procedure = File "INITMIP_Scalar_OUTPUT" "INITMIP_Scalar_OUTPUT"
     Variable = -nooutput "unused"
 
-   File Name = File "INITMIP_Scalar_OUTPUT_"$name$".dat"
 
    Exported Variable 1 = -dofs 1 -elem IceDischarge
+   File Name = File "INITMIP_Scalar_OUTPUT_"$name$".dat"
 End
 
 !#
 !# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !# SOLVER to save mean value instead of instantaneous value
-!#     - step 1: sum over time
-!#     - step 2: compute mean and reset sum to 0
 !# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !#
+
 Solver 11
-   Exec Solver = After Timestep
-   Equation = "Cumulate value"
-      variable = Time_Start
-
-      Procedure = "Temporal_Mean_Step1" "Temporal_Mean_Step1"
-
-      Time integration Variable 1 = String "IceDischarge"
-
-End 
-
-Solver 12
-   Exec Solver = Before saving
-   Equation = "Time mean value"
-      Procedure = "Temporal_Mean_Step2" "Temporal_Mean_Step2"
-
-      Time Mean Variable 1 = String "IceDischarge"
-
-End  
+  Exec Solver = After Timestep
+  Equation = "Time Mean value"
+     Procedure = "Time_Mean" "Time_Mean"
+     Time Mean Variable 1 = String "IceDischarge"
+End
 
 !#
 !# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !# SOLVER to interpolate ELmer data to NEMO grid
 !# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !#
-Solver 13
+
+Solver 12
   Exec Solver = After Simulation
   Equation = "Interpolation" !#Eq1
     Procedure = "Elmer2NEMO_Interp" "Elmer2NEMO_Interp"
@@ -360,7 +363,7 @@ End
  
 !#####
 Equation 1
-  Active Solvers (13)= 1 2 3 4 5 6 7 8 9 10 11 12 13
+  Active Solvers (12)= 1 2 3 4 5 6 7 8 9 10 11 12
 End
 
 !#####

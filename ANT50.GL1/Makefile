@@ -5,20 +5,17 @@ BLD=BLD/
 
 VPATH=$(BLD)
 
-#FFLAGS= 
+#FFLAGS=-O3 
 FFLAGS=-g -CB -O0
 
-LIBS= USFs_Ronnie_inversion INITMIP_Scalar_OUTPUT Save_Netcdf Flotation2 boxmodel_solver nearestpoint FrontThickness_mask USF_CondFront USF_CondDistance USF_WaterPressure PDC_BASALMELT Elmer2NEMO_Interp Temporal_Mean_Step1 Temporal_Mean_Step2 READ_CELL_NETCDF
+LIBS= USFs_Ronnie_inversion INITMIP_Scalar_OUTPUT Save_Netcdf Flotation2 boxmodel_solver nearestpoint FrontThickness_mask USF_CondFront USF_CondDistance USF_WaterPressure PDC_BASALMELT Elmer2NEMO_Interp READ_CELL_NETCDF Time_Mean
 
 all: $(LIBS)
 
 READ_CELL_NETCDF: $(SRC)/READ_CELL_NETCDF.F90
 	elmerf90 -I$(NETCDF_INC_DIR) $^ -o $(BLD)/$@ $(FFLAGS) -L$(NETCDF_LIB_DIR) -lnetcdf -lnetcdff
 
-Temporal_Mean_Step1:$(SRC)/Temporal_Mean_Step1.F90
-	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
-
-Temporal_Mean_Step2:$(SRC)/Temporal_Mean_Step2.F90
+Time_Mean:$(SRC)/Time_Mean.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
 USFs_Ronnie_inversion:$(SRC)/USFs_Ronnie_inversion.F90
