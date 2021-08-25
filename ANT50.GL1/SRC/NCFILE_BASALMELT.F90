@@ -60,9 +60,9 @@
       INTEGER , POINTER :: NodeIndexes(:)
       INTEGER :: i
       INTEGER :: NElements
-      CHARACTER (len=256) :: FName
-      CHARACTER (len=256) :: VarName
-      CHARACTER (len=256), SAVE :: TVarName
+      CHARACTER (len=512) :: FName, DName
+      CHARACTER (len=512) :: VarName
+      CHARACTER (len=512), SAVE :: TVarName
       INTEGER :: varid,ncells,ncid,ndims,ntime,TVarID
       REAL(KIND=dp), SAVE, ALLOCATABLE :: Values(:)
       REAL(KIND=dp) :: zmlt, time
@@ -112,7 +112,7 @@
 
          ! define GL treatment
          IF ( lmask ) THEN
-            llGL=ListGetLogical( SolverParams, 'Grounding Line Melt', UnFoundFatal=.TRUE. )
+            llGL=ListGetLogical( Model%Simulation, 'Grounding Line Melt', UnFoundFatal=.TRUE. )
             IF ( llGL ) THEN
                mskcrit =  0.5 ! Melt is at the Grounding Line and floating points
                WRITE(Message,'(a)') &
@@ -129,14 +129,17 @@
          ! ================
 
          ! read netcdf
+         DName = ListGetString(SolverParams,'Dir Name',UnFoundFatal=.TRUE.)
          FName = ListGetString(SolverParams,'File Name',UnFoundFatal=.TRUE.)
          VarName = ListGetString(SolverParams,'Variable Name',UnFoundFatal=.TRUE.)
          TVarName = ListGetString(SolverParams,'Target Variable Name',Found)
          IF (.NOT.Found) TVarName=VarName
 
-         WRITE(Message,'(a,a)') 'File name: ',Trim(FName)
+         WRITE(Message,'(a,a)') 'Dir name: ',TRIM(DName)
          CALL INFO(SolverName,Message,Level=1)
-         WRITE(Message,'(a,a)') 'Variable name: ',Trim(VarName)
+         WRITE(Message,'(a,a)') 'File name: ',TRIM(FName)
+         CALL INFO(SolverName,Message,Level=1)
+         WRITE(Message,'(a,a)') 'Variable name: ',TRIM(VarName)
          CALL INFO(SolverName,Message,Level=1)
          CALL INFO(SolverName,'--------------------------',Level=1)
          CALL INFO(SolverName,'',Level=1)
@@ -146,7 +149,7 @@
          IF(Var % TYPE /= Variable_on_elements) &
          CALL FATAL(SolverName,'Wrong variable type; use -elem ')
 
-         CALL NCERR( NF90_OPEN(trim(FName),NF90_NOWRITE,ncid), &
+         CALL NCERR( NF90_OPEN(TRIM(DName)//TRIM(FName),NF90_NOWRITE,ncid), &
                      "file open failed", SolverName)
 
          CALL NCERR( NF90_inq_dimid(ncid, 'ncells' , varid), &
