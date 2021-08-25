@@ -15,7 +15,7 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
   REAL(KIND=dp),SAVE,ALLOCATABLE :: GroundedArea(:),FloatingArea(:),FreeArea(:)
   REAL(KIND=dp),SAVE,ALLOCATABLE :: CalvingFlux(:)
   REAL(KIND=dp),SAVE,ALLOCATABLE :: GLFlux(:)
-  REAL(KIND=dp),SAVE :: zsea,rhow,mskcrit
+  REAL(KIND=dp),SAVE :: zsea,rhow
 
   REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodeArea
   REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: LocalArea
@@ -35,7 +35,7 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
 
   INTEGER :: FlowDofs
 
-  LOGICAL,SAVE :: Firsttime=.TRUE.,  BasinLogic =.TRUE.,llGL = .False.
+  LOGICAL,SAVE :: Firsttime=.TRUE.,  BasinLogic =.TRUE.
 
   CHARACTER(LEN=MAX_NAME_LEN) :: SolverName='INITMIP_Scalar_OUTPUT',xi
   CHARACTER(LEN=MAX_NAME_LEN),SAVE :: OUTPUT_FName, OUTPUT_FName_b
@@ -44,14 +44,6 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
   CALL GET_VARIABLES()
 
   IF (Firsttime.OR.Solver%Mesh%Changed) THEN
-
-     llGL=ListGetLogical( Model % Simulation, 'Grounding Line Melt')
-     print *,'If Grounding Line Melt is not define, the default is False' 
-     IF ( llGL ) THEN
-        mskcrit =  0.5 ! Melt is at the Grounding Line and floating points
-     else
-        mskcrit = -0.5 ! No melt at the Grounding Line, only floating points
-     ENDif
 
      IF (.NOT.ASSOCIATED(Solver%Variable)) & 
           CALL FATAL(SolverName,'Solver%Variable Not associated')
