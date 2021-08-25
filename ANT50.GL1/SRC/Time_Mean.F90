@@ -34,7 +34,7 @@
 ! *  - Save results on the NEMO Grid
 ! *****************************************************************************
 ! *****************************************************************************
-       SUBROUTINE Temporal_Mean_Step1_init0(Model,Solver,dt,TransientSimulation )
+       SUBROUTINE Time_Mean_init0(Model,Solver,dt,TransientSimulation )
 !------------------------------------------------------------------------------
        USE DefUtils
 !------------------------------------------------------------------------------
@@ -61,21 +61,22 @@
       nvar = 0
       DO WHILE( .TRUE. )
          nvar = nvar + 1
-         str = ComponentName( 'Time integration Variable', nvar )
+         str = ComponentName( 'Time Mean Variable', nvar )
          VarName = ListGetString( SolverParams, str, GotIt )
          ! check also that we can get it
          IF(.NOT. GotIt) EXIT
           
          ! add exported variable
          WRITE(cvar, '(a,i1)') 'Exported Variable ',nvar
-         CALL ListAddNewString( Solver % Values, TRIM(cvar), '-dofs 1 -elem Time_Int_'//TRIM(VarName))
+         CALL ListAddNewString( Solver % Values, TRIM(cvar), & 
+                               '-dofs 1 -elem Mean_'//TRIM(VarName))
 
       END DO
 
-      END SUBROUTINE Temporal_Mean_Step1_init0
+      END SUBROUTINE Time_Mean_init0
 !
 !------------------------------------------------------------------------------
-      SUBROUTINE Temporal_Mean_Step1( Model,Solver,dt,TransientSimulation )
+      SUBROUTINE Time_Mean( Model,Solver,dt,TransientSimulation )
 !------------------------------------------------------------------------------
       USE DefUtils
 !------------------------------------------------------------------------------
@@ -88,59 +89,92 @@
 !------------------------------------------------------------------------------
       TYPE(ValueList_t), POINTER :: SolverParams
       TYPE(Variable_t) , POINTER :: Variable
-      TYPE(Variable_t) , POINTER :: Time_Int_Variable
+      TYPE(Variable_t) , POINTER :: Mean_Variable
+
+      INTEGER, POINTER :: tmp(:)
+      INTEGER, SAVE :: Output_interval, Time_interval
+      INTEGER, SAVE :: ktime
 
       LOGICAL,SAVE :: FirstTime=.TRUE.
+      LOGICAL,SAVE :: lmean
 
       ! Solver reading
-      CHARACTER(LEN=MAX_NAME_LEN) :: SolverName='Time_mean_step1'
+      CHARACTER(LEN=MAX_NAME_LEN) :: SolverName='Time_mean'
       CHARACTER(LEN=MAX_NAME_LEN) :: VarName,str
       INTEGER :: nvar
-      LOGICAL :: GotIt
+      LOGICAL :: GotIt, Found
 
       ! Get input and output netcdf files
       SolverParams => GetSolverParams()
 
       ! Initialisation
       IF (Firsttime) then
-         ! define cumulated variable for each variable in sif
-         nvar = 0
-         DO WHILE( .TRUE. )
-            nvar = nvar + 1
-            str = ComponentName( 'Time integration Variable', nvar )
-            VarName = ListGetString( SolverParams, str, GotIt )
-            IF(.NOT. GotIt) EXIT
-            ! check also that we can get it
-            Variable => VariableGet( Model % Mesh % Variables,'Time_Int_'//TRIM(VarName), UnFoundFatal=.TRUE.)
-            Variable % values(:) = 0.0_dp
-         END DO
-         
-         ! sanity check if nvar = 0
-         IF (nvar == 0) CALL FATAL(SolverName,'No Time integration Variable found, ERROR')
-
-         ! initalise start time
-         ! add -dt because this solver is call after time step
-         CALL ListAddConstReal( Model % Simulation,'Time_Start',GetTime() - dt)
-
          FirstTime=.FALSE.
 
+         ! get output frequency
+         tmp => ListGetIntegerArray( Model % Simulation, &
+                   'Output Intervals', Found, UnfoundFatal=.TRUE.)
+         IF(SIZE(tmp,1) > 1) CALL Fatal(SolverName, &
+                                    'Only 1 Output Intervals supported')
+         Output_interval = tmp(1)
+         
+         ! get simulation length
+         tmp => ListGetIntegerArray( Model % Simulation, &
+                   'Timestep Intervals', Found, UnfoundFatal=.TRUE.)
+         IF(SIZE(tmp,1) > 1) CALL Fatal(SolverName, &
+                                  'Only 1 Timestep Intervals supported')
+         Time_interval = tmp(1)
+
+         ! initialise time step count
+         ktime = 0
+
+         ! initialise lmean state
+         lmean = .TRUE.  ! => this trigger an initialisation to 0 of Mean_Variable % values(:)
       END IF
 
       ! compute the time integration
+      ktime = ktime + 1
+
+      ! start temporal mean
       nvar = 0
       DO WHILE( .TRUE. )
          nvar = nvar + 1
-         str = ComponentName( 'Time integration Variable', nvar )
+         str = ComponentName( 'Time Mean Variable', nvar )
          VarName = ListGetString( SolverParams, str, GotIt )
          IF(.NOT. GotIt) EXIT
-         ! check also that we can get it
 
-         ! retreive icedischarge
-         Variable          => VariableGet(Model % Mesh % Variables,             TRIM(VarName),UnFoundFatal=.TRUE.)
+         ! retreive variable
+         Variable => VariableGet(Model % Mesh % Variables, TRIM(VarName), UnFoundFatal=.TRUE.)
+
+         ! retreive mean value
+         Mean_Variable => VariableGet(Model % Mesh % Variables,'Mean_'//TRIM(VarName),UnFoundFatal=.TRUE.)
+
+         ! reset Mean if already outputed at previous time step or first
+         ! time step
+         IF ( lmean ) THEN
+            Mean_Variable % values(:) = 0.0_dp
+         END IF
+
+         ! compute mean if last time step or at each output time step
+         lmean = .FALSE.
+         IF ( ktime == Time_interval ) lmean = .TRUE.
+         IF ( Output_interval > 0 ) THEN
+            IF ( MOD(ktime - 1, Output_interval)== 0 ) lmean = .TRUE.
+         END IF 
 
          ! compute time integration
-         Time_Int_Variable => VariableGet(Model % Mesh % Variables,'Time_Int_'//TRIM(VarName),UnFoundFatal=.TRUE.)
-         Time_Int_Variable % values (:) = Time_Int_Variable % values (:) + dt * Variable % values (:)
+         Mean_Variable % values (:) = Mean_Variable % values (:) + Variable % values (:)
+         PRINT *, 'SUM = ', ktime, SUM(Variable % values (:)), SUM(Mean_Variable % values (:))
+
+         ! compute mean
+         IF ( lmean ) THEN
+             Mean_Variable % values (:) = Mean_Variable % values (:) / ktime
+             PRINT *, 'MEAN = ', ktime, SUM(Mean_Variable % values (:))
+         END IF
       END DO
+
+      ! sanity check if nvar = 0
+      IF (nvar == 0) CALL FATAL(SolverName, &
+                            'No Time Mean Variable found, ERROR')
 
       END
