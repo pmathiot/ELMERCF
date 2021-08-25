@@ -67,7 +67,7 @@ cp REF/elmer.param $RELMER/${CONFIG}-${CASE}_elmer.param || nerr=$((nerr+1))
 # copy lsol parameter
 cp REF/elmer.lsol $RELMER/${CONFIG}-${CASE}_elmer.lsol || nerr=$((nerr+1))
 # copy reference script to submit elmer
-cp REF/run_elmer_skel.bash $RELMER/run_elmer.bash || nerr=$((nerr+1))
+cp REF/run_elmer_skel.bash $RELMER/run_elmer_skel.bash || nerr=$((nerr+1))
 # copy reference script to submit elmer
 cp REF/run_param_skel.bash $RELMER/run_param.bash || nerr=$((nerr+1))
 # copy and update reference include file

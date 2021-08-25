@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH -J <NAME>
 
-#SBATCH --nodes=1
+#SBATCH --nodes=<NNODES>
 #SBATCH --constraint=HSW24
 
-#SBATCH --ntasks=24
+#SBATCH --ntasks=<NTASKS>
 #SBATCH --ntasks-per-node=24
 #SBATCH --threads-per-core=1
 #SBATCH --cpus-per-task=1
 
-#SBATCH --time=0:10:00
+#SBATCH --time=0:20:00
 
 #SBATCH --output LOG/<NAME>.o%j
 #SBATCH --error  LOG/<NAME>.e%j

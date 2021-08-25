@@ -66,13 +66,15 @@ do
         -e "s/<RSTFILEa>/$RSTFILEa/g" $CONFIG-${CASE}_elmer.sif  > $WELMER/elmer_t$i.sif 
 
     # prepare run script
-    sed -e "s!<NAME>!${NAME}_$i!g" \
-        -e "s!<WORKDIR>!$WELMER!g"        \
-        -e "s!<SIF>!elmer_t$i.sif!g"      \
-        -e "s!<ECONFIG>!$CONFIG!g"        \
-        -e "s!<ECASE>!$CASE!g"            \
-        -e "s!<RSTFILEb>!$RSTFILEb!g"     \
-        -e "s!<RUNID>!${i}!"              run_elmer.bash > run_elmer_${i}.slurm
+    sed -e "s!<NAME>!${NAME}_$i!g"     \
+        -e "s!<NNODES>!${NN}!g"        \
+        -e "s!<NTASKS>!${NP}!g"        \
+        -e "s!<WORKDIR>!$WELMER!g"     \
+        -e "s!<SIF>!elmer_t$i.sif!g"   \
+        -e "s!<ECONFIG>!$CONFIG!g"     \
+        -e "s!<ECASE>!$CASE!g"         \
+        -e "s!<RSTFILEb>!$RSTFILEb!g"  \
+        -e "s!<RUNID>!${i}!"           run_elmer_skel.bash > run_elmer_${i}.slurm
 
     # submit job
     if [ ! -z "$jobid0" ];then
