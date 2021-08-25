@@ -42,7 +42,7 @@
 !   Target Variable Name = String OPTIONAL <name of the Elmer variable>
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
-      SUBROUTINE READ_BASAL_MELT_NC( Model,Solver,dt,TransientSimulation )
+      SUBROUTINE NCFILE_BASALMELT( Model,Solver,dt,TransientSimulation )
 !------------------------------------------------------------------------------
       USE DefUtils
       USE NETCDF
@@ -68,7 +68,7 @@
       REAL(KIND=dp) :: zmlt, time
       INTEGER :: TimeIndex
       INTEGER :: EIndex
-      CHARACTER(LEN=MAX_NAME_LEN) :: SolverName="READ_NETCDF_CELL"
+      CHARACTER(LEN=MAX_NAME_LEN) :: SolverName="NCFILE_BASALMELT"
       LOGICAL :: Parallel,Found,Firsttime=.TRUE.
 
 ! masking
@@ -150,18 +150,18 @@
                      "file open failed", SolverName)
 
          CALL NCERR( NF90_inq_dimid(ncid, 'ncells' , varid), &
-                     "unable to get ncells dim")
+                     "unable to get ncells dim", SolverName)
 
          CALL NCERR( NF90_inquire_dimension(ncid,varid,len=ncells), &
-                     "unable to get ncells")
+                     "unable to get ncells", SolverName)
 
          ! get variable ID
          CALL NCERR( NF90_inq_varid(ncid,trim(VarName),TVarId), &
-                     "unable to get varid")
+                     "unable to get varid", SolverName)
 
          ! variable dimensions
          CALL NCERR( NF90_inquire_variable(ncid, TVarId, ndims=ndims), &
-                     "unable to get variable dimensions")
+                     "unable to get variable dimensions", SolverName)
       
          ALLOCATE(Values(ncells))
          Values(:)=0.0_dp
@@ -169,10 +169,10 @@
          ! if ndim > 1 we should have a time dimension
          IF (ndims.GT.1) THEN
             CALL NCERR( NF90_inq_dimid(ncid, 'time' , varid), &
-                        "unable to get time dimension")
+                        "unable to get time dimension", SolverName)
 
             CALL NCERR( NF90_inquire_dimension(ncid,varid,len=ntime), &
-                        "unable to get ntime")
+                        "unable to get ntime", SolverName)
         
             ! check ntime lenght
             IF (ntime > 1) &
@@ -183,7 +183,7 @@
             TimeIndex = 1  ! ntime > 1 not yet managed
 
             CALL NCERR( NF90_get_var(ncid,TVarId,Values,start=(/1,TimeIndex/),count=(/ncells,1/)), &
-                        "unable to get variable")
+                        "unable to get variable", SolverName)
 
             WRITE(Message,'(a,i0)') 'reading time step: ',TimeIndex
             CALL INFO(SolverName,Message,level=4)
@@ -329,7 +329,7 @@
       CALL INFO(SolverName,'--------------------------',Level=1)
       CALL INFO(SolverName,'',Level=1)
 
-      END SUBROUTINE READ_CELL_NETCDF
+      CONTAINS
 
       SUBROUTINE NCERR(istatus,cmessage, csolvername)
 
@@ -338,9 +338,12 @@
 
          IMPLICIT NONE
 
-         CHARACTER(LEN=256), INTENT(in) :: cmessage, csolvername
-         INTEGER           , INTENT(in) :: istatus
+         CHARACTER(LEN=*), INTENT(in) :: cmessage, csolvername
+         INTEGER         , INTENT(in) :: istatus
          IF ( istatus /= NF90_NOERR ) &
             CALL FATAL(csolvername,TRIM(cmessage))
 
-      END SUBROUTINE
+      END SUBROUTINE NCERR
+
+      END SUBROUTINE NCFILE_BASALMELT
+

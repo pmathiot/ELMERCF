@@ -16,6 +16,7 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
   REAL(KIND=dp),SAVE,ALLOCATABLE :: CalvingFlux(:)
   REAL(KIND=dp),SAVE,ALLOCATABLE :: GLFlux(:)
   REAL(KIND=dp),SAVE :: zsea,rhow
+  REAL(KIND=dp) :: ztmp
 
   REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodeArea
   REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: LocalArea
@@ -169,6 +170,19 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
      CLOSE(io)
   END DO
 
+  ! Sanity check
+  IF (ParEnv % PEs > 1 )THEN
+     CALL MPI_ALLREDUCE(SUM(CalvingFlux),ztmp,1,MPI_DOUBLE_PRECISION,MPI_SUM,ELMER_COMM_WORLD,ierr)
+  ELSE
+     ztmp = SUM(CalvingFlux)
+  END IF
+  CALL INFO(SolverName,'',Level=1)
+  CALL INFO(SolverName,'--------------------------',Level=1)
+  WRITE(Message,'(a,f12.4)') 'ICB CALVING [Gt/y] = ', ztmp*0.917_dp/1.0e9
+  CALL INFO(SolverName,Message,Level=1)
+  CALL INFO(SolverName,'--------------------------',Level=1)
+  CALL INFO(SolverName,'',Level=1)
+
   CONTAINS
 
   SUBROUTINE DO_ALLOCATION(Firsttime)
@@ -267,7 +281,6 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
 
     BasinVar => VariableGet( Model % Mesh % Variables, 'basins')
 
-    !IceDis => VariableGet(Solver%Mesh%Variables,'IceDischarge')
     IceDis => VariableGet(Model%Mesh%Variables,'IceDischarge')
 
 

@@ -49,7 +49,7 @@ Simulation
   Restart Position = 0
   Restart Time = Real 0.0
 
-  max output level = 10 
+  max output level = 5
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body 1
@@ -70,13 +70,6 @@ Body Force 1
 
   Water Pressure = Variable Zb
     Real procedure "USF_WaterPressure" "WaterPressure"
-  distGL = Real 0.0  ! used in Solver DistanceSolver1
-  distGL Condition = Variable GroundedMask
-    Real procedure "USF_CondDistance" "CondDistance"
-  distIF = Real 0.0
-  distIF Condition = Variable FrontMask
-    Real procedure "USF_CondFront" "CondFront"
-   
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -122,6 +115,7 @@ Solver 1
    Target Variable 1 = String "basins"
    Variable 1 data file = File "$data_dir$/$file_basins$"
 End
+
 !! Apply flotaison; from H compute Zb and Zs
 Solver 2
    Equation = "Flotation"
@@ -139,29 +133,6 @@ Solver 2
 !
 End
 
-Solver 3
-  Equation = "distance GL"
-  Variable = -dofs 1 distGL
-    Procedure = "DistanceSolve" "DistanceSolver1"
-  Optimize Bandwidth = logical False
-End
-
-Solver 4
-  Equation = "FrontMask"
-  Variable = FrontMask
-  Variable DOFs = 1
-    Procedure = "FrontThickness_mask" "FrontThickness_mask"
-End
-
-Solver 5
-  Equation = "Real distance IF"
-  Variable = -dofs 1 distIF
-    Procedure = "DistanceSolve" "DistanceSolver1"
-  Optimize Bandwidth = logical False
-  Exported variable 1 = -dofs 1 distIF
-End
-
-
 !#-----------------------------------------------------------------------
 !# SOLVER to read ice shelf melt from netcdf file (typically NEMO output)
 !#     - input  : * netcdf file interpolated onto ELMER grid via CDO (File Name)
@@ -174,23 +145,21 @@ End
 !#                                 * Exported Variable 1
 !#                                 * Bottom Surface Accumulation in Body Force 1
 !#-----------------------------------------------------------------------
-Solver 6
+Solver 3
    Equation = "map melt"
-   Exec Solver = Before simulation
-   Procedure = "READ_CELL_NETCDF" "READ_CELL_NETCDF"
+   Procedure = "NCFILE_BASALMELT" "NCFILE_BASALMELT"
    Variable = -nooutput "reader1"
-
    Optimize Bandwidth = False
 
    File Name = File "$data_dir$/$file_bmb$"
-
    Variable Name = File "$var_bmb$"
-
    Target Variable Name = String "Melt"
    Exported Variable 1 = -elem "Melt"
+
+   Mask melt = Logical False
 End
 
-Solver 7
+Solver 4
 
   Equation = "SSA"
   Variable = -dofs 2 "SSAVelocity"
@@ -219,7 +188,7 @@ Solver 7
 End
 
 !! Thickness solver
-Solver 8
+Solver 5
 
    Equation = "Thickness"
    Variable = -dofs 1 "H"
@@ -237,7 +206,7 @@ Solver 8
     Linear System Iterative Method = "BiCGStab"
     Linear System Max Iterations = 1000
     Linear System Convergence Tolerance = 1.0E-12
-    Linear System Abort Not Converged = True
+    Linear System Abort Not Converged = Logical True
     Linear System Residual Output = 1
     Linear System Preconditioning = "ILU2"
    
@@ -262,7 +231,7 @@ Solver 8
     Linear System Timing Cumulative = Logical True
 End
 
-Solver 9
+Solver 6
   Exec Interval = $SCALARS_INTERVAL
   Exec Solver = After Timestep
 
@@ -314,8 +283,7 @@ Solver 9
 
 End
 
-Solver 10
-  Exec Interval = $SCALARS_INTERVAL
+Solver 7
   Exec Solver = After Timestep
   Equation = "Save INITMIP"
     Procedure = File "INITMIP_Scalar_OUTPUT" "INITMIP_Scalar_OUTPUT"
@@ -332,7 +300,7 @@ End
 !# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !#
 
-Solver 11
+Solver 8
   Exec Solver = After Timestep
   Equation = "Time Mean value"
      Procedure = "Time_Mean" "Time_Mean"
@@ -345,7 +313,7 @@ End
 !# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !#
 
-Solver 12
+Solver 9
   Exec Solver = After Simulation
   Equation = "Interpolation" !#Eq1
     Procedure = "Elmer2NEMO_Interp" "Elmer2NEMO_Interp"
@@ -363,7 +331,7 @@ End
  
 !#####
 Equation 1
-  Active Solvers (12)= 1 2 3 4 5 6 7 8 9 10 11 12
+  Active Solvers (9)= 1 2 3 4 5 6 7 8 9
 End
 
 !#####

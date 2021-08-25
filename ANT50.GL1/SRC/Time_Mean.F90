@@ -49,6 +49,7 @@
 !------------------------------------------------------------------------------
       ! Solver reading
       CHARACTER(LEN=MAX_NAME_LEN) :: VarName,str,cvar
+      CHARACTER(LEN=MAX_NAME_LEN) :: SolverName="Time_Mean"
       INTEGER :: nvar
       LOGICAL :: GotIt
       TYPE(ValueList_t), POINTER :: SolverParams
@@ -58,20 +59,32 @@
 
       ! Initialisation
       ! define cumulated variable for each variable in sif
+      CALL INFO(SolverName,'',Level=1)
+      CALL INFO(SolverName,'--------------------------',Level=1)
+      CALL INFO(SolverName,'Time Mean Init'            ,Level=1)
+      CALL INFO(SolverName,'',Level=1)
+
       nvar = 0
       DO WHILE( .TRUE. )
          nvar = nvar + 1
          str = ComponentName( 'Time Mean Variable', nvar )
          VarName = ListGetString( SolverParams, str, GotIt )
+
          ! check also that we can get it
          IF(.NOT. GotIt) EXIT
           
+         WRITE(Message,'(a,a)') 'Average variable : ',TRIM(VarName)
+         CALL INFO(SolverName,Message,Level=1)
+
          ! add exported variable
          WRITE(cvar, '(a,i1)') 'Exported Variable ',nvar
          CALL ListAddNewString( Solver % Values, TRIM(cvar), & 
                                '-dofs 1 -elem Mean_'//TRIM(VarName))
 
       END DO
+
+      CALL INFO(SolverName,'--------------------------',Level=1)
+      CALL INFO(SolverName,'',Level=1)
 
       END SUBROUTINE Time_Mean_init0
 !
@@ -164,12 +177,10 @@
 
          ! compute time integration
          Mean_Variable % values (:) = Mean_Variable % values (:) + Variable % values (:)
-         PRINT *, 'SUM = ', ktime, SUM(Variable % values (:)), SUM(Mean_Variable % values (:))
 
          ! compute mean
          IF ( lmean ) THEN
              Mean_Variable % values (:) = Mean_Variable % values (:) / ktime
-             PRINT *, 'MEAN = ', ktime, SUM(Mean_Variable % values (:))
          END IF
       END DO
 
