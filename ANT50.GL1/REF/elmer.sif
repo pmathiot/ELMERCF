@@ -19,10 +19,6 @@ Constants
   Sea Water Specific heat = Real $cw
   Ice fusion latent heat = Real $Lf 
   Ice density = Real $rhoi
-  Liquidus slope = Real $lambda1
-  Liquidus intercept = Real $lambda2
-  Liquidus pressure coeff = Real $lambda3
-  Melt factor = Real $meltfac
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Simulation
@@ -49,7 +45,7 @@ Simulation
   Restart Position = 0
   Restart Time = Real 0.0
 
-  max output level = 5
+  max output level = 3
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body 1
@@ -145,19 +141,27 @@ End
 !#                                 * Exported Variable 1
 !#                                 * Bottom Surface Accumulation in Body Force 1
 !#-----------------------------------------------------------------------
+
 Solver 3
    Equation = "map melt"
    Procedure = "NCFILE_BASALMELT" "NCFILE_BASALMELT"
    Variable = -nooutput "reader1"
    Optimize Bandwidth = False
 
-   File Name = File "$data_dir$/$file_bmb$"
+   Dir Name = File "$data_dir$"
+   File Name = File "$file_bmb$"
    Variable Name = File "$var_bmb$"
    Target Variable Name = String "Melt"
    Exported Variable 1 = -elem "Melt"
 
    Mask melt = Logical False
 End
+
+!#
+!# ~~~~~~~~~~
+!# SSA SOLVER
+!# ~~~~~~~~~~
+!#
 
 Solver 4
 
@@ -187,7 +191,12 @@ Solver 4
 !
 End
 
-!! Thickness solver
+!#
+!# ~~~~~~~~~~~~~~~~
+!# THICKNESS SOLVER
+!# ~~~~~~~~~~~~~~~~
+!#
+
 Solver 5
 
    Equation = "Thickness"
@@ -230,6 +239,12 @@ Solver 5
     Linear System Timing = Logical True
     Linear System Timing Cumulative = Logical True
 End
+
+!#
+!# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!# SOLVER to save monitoring time series
+!# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!#
 
 Solver 6
   Exec Interval = $SCALARS_INTERVAL
@@ -282,6 +297,12 @@ Solver 6
   Operator 11 = "min"
 
 End
+
+!#
+!# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!# SOLVER to save usefull time series by basin
+!# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!#
 
 Solver 7
   Exec Solver = After Timestep
