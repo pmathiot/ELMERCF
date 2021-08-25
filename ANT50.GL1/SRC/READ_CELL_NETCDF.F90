@@ -42,7 +42,7 @@
 !   Target Variable Name = String OPTIONAL <name of the Elmer variable>
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
-      SUBROUTINE READ_CELL_NETCDF( Model,Solver,dt,TransientSimulation )
+      SUBROUTINE READ_BASAL_MELT_NC( Model,Solver,dt,TransientSimulation )
 !------------------------------------------------------------------------------
       USE DefUtils
       USE NETCDF
@@ -57,129 +57,229 @@
       TYPE(ValueList_t), POINTER :: SolverParams
       TYPE(Variable_t),POINTER :: Var
       TYPE(Element_t), POINTER :: Element
+      INTEGER , POINTER :: NodeIndexes(:)
       INTEGER :: i
       INTEGER :: NElements
-      CHARACTER (len=100) :: FName
-      CHARACTER (len=100) :: VarName,TVarName
+      CHARACTER (len=256) :: FName
+      CHARACTER (len=256) :: VarName
+      CHARACTER (len=256), SAVE :: TVarName
       INTEGER :: varid,ncells,ncid,ndims,ntime,TVarID
-      INTEGER :: NetCDFstatus
-      REAL(KIND=dp), ALLOCATABLE :: Values(:)
-      REAL(KIND=dp) :: time
+      REAL(KIND=dp), SAVE, ALLOCATABLE :: Values(:)
+      REAL(KIND=dp) :: zmlt, time
       INTEGER :: TimeIndex
-      INTEGER,SAVE :: SavedTime=-1
       INTEGER :: EIndex
       CHARACTER(LEN=MAX_NAME_LEN) :: SolverName="READ_NETCDF_CELL"
-      LOGICAL :: Parallel,Found
+      LOGICAL :: Parallel,Found,Firsttime=.TRUE.
+
+! masking
+      LOGICAL, SAVE :: lmask, llGL
+      INTEGER, SAVE :: mskcrit
+      TYPE(Variable_t),POINTER :: GMVar
 
 ! sanity check declaration
       TYPE(GaussIntegrationPoints_t) :: IntegStuff
       REAL(KIND=dp) :: U,V,W,S,SqrtElementMetric
-      REAL(KIND=dp) :: zwgt
-      REAL(KIND=dp) :: rarea_elm, rarea_msh
-      REAL(KIND=dp) :: rmlt_elm, rmlt_msh
+      REAL(KIND=dp)       :: rmlt_msh
+      REAL(KIND=dp), SAVE :: rarea_msh
       REAL(KIND=dp) :: rtmp
       INTEGER :: inode
       INTEGER :: ierr
       LOGICAL :: zstat
       TYPE(Nodes_t),SAVE :: ElementNodes
       REAL(KIND=dp),ALLOCATABLE,SAVE :: Basis(:), dBasisdx(:,:)
+      REAL(KIND=dp),ALLOCATABLE,SAVE :: rarea_elm(:)
       INTEGER:: M
 
-! get parameters
+      ! get parameters
       SolverParams => GetSolverParams()
-      FName = ListGetString(SolverParams,'File Name',UnFoundFatal=.TRUE.)
 
-      write(Message,'(a,a)') 'File name: ',Trim(FName)
-      CALL INFO(SolverName,Message,Level=4)
-
-      VarName = ListGetString(SolverParams,'Variable Name',UnFoundFatal=.TRUE.)
-      TVarName = ListGetString(SolverParams,'Target Variable Name',Found)
-      IF (.NOT.Found) TVarName=VarName
-
-! check if this is a paralell run
+      ! check if this is a paralell run
       Parallel=(ParEnv % PEs > 1)
 
-! get variable
-      Var => VariableGet( Model % Mesh % Variables,TRIM(TVarName),UnFoundFatal=.TRUE.)
-      IF(Var % TYPE /= Variable_on_elements) &
-        CALL FATAL(SolverName,'Wrong variable type; use -elem ')
+      ! First call
+      IF (Firsttime) THEN
+         Firsttime=.False.
 
-      NetCDFstatus = NF90_OPEN(trim(FName),NF90_NOWRITE,ncid)
-      IF ( NetCDFstatus /= NF90_NOERR ) &
-         CALL FATAL(SolverName,"file open failed")
+         ! should we mask melt by grounded mask ?
+         lmask=ListGetLogical( SolverParams, 'Mask Melt', UnFoundFatal=.TRUE. )
+         
+         CALL INFO(SolverName,'',Level=1)
+         CALL INFO(SolverName,'BASAL MELT rate definition',Level=1)
+         CALL INFO(SolverName,'--------------------------',Level=1)
+         WRITE(Message,'(a,L)') &
+               'mask grounded cell melt at every step: ',lmask
+         CALL INFO(SolverName,Message,Level=1)
 
-      NetCDFstatus = nf90_inq_dimid(ncid, 'ncells' , varid)
-      IF ( NetCDFstatus /= NF90_NOERR ) &
-          CALL FATAL(SolverName,"unable to get ncells dim")
+         ! define GL treatment
+         IF ( lmask ) THEN
+            llGL=ListGetLogical( SolverParams, 'Grounding Line Melt', UnFoundFatal=.TRUE. )
+            IF ( llGL ) THEN
+               mskcrit =  0.5 ! Melt is at the Grounding Line and floating points
+               WRITE(Message,'(a)') &
+                     '   - Melt at the grounding line'
+            ELSE
+               mskcrit = -0.5 ! No melt at the Grounding Line, only floating points
+               WRITE(Message,'(a)') &
+                     '   - NO melt at the grounding line'
+            ENDIF
+            CALL INFO(SolverName,Message,Level=1)
+         END IF
 
-      NetCDFstatus = nf90_inquire_dimension(ncid,varid,len=ncells)
-      IF ( NetCDFstatus /= NF90_NOERR ) &
-         CALL FATAL(SolverName,"unable to get ncells")
+         ! READ NETCDF DATA
+         ! ================
 
-      allocate(Values(ncells))
-      Values(:)=0.0_dp
+         ! read netcdf
+         FName = ListGetString(SolverParams,'File Name',UnFoundFatal=.TRUE.)
+         VarName = ListGetString(SolverParams,'Variable Name',UnFoundFatal=.TRUE.)
+         TVarName = ListGetString(SolverParams,'Target Variable Name',Found)
+         IF (.NOT.Found) TVarName=VarName
 
-      ! get variable ID
-      NetCDFstatus = nf90_inq_varid(ncid,trim(VarName),TVarId)
-      IF ( NetCDFstatus /= NF90_NOERR ) &
-          CALL FATAL(SolverName,"unable to get varid")
+         WRITE(Message,'(a,a)') 'File name: ',Trim(FName)
+         CALL INFO(SolverName,Message,Level=1)
+         WRITE(Message,'(a,a)') 'Variable name: ',Trim(VarName)
+         CALL INFO(SolverName,Message,Level=1)
+         CALL INFO(SolverName,'--------------------------',Level=1)
+         CALL INFO(SolverName,'',Level=1)
 
-      ! variable dimensions
-      NetCDFstatus = nf90_inquire_variable(ncid, TVarId, ndims=ndims)
-      IF ( NetCDFstatus /= NF90_NOERR ) &
-          CALL FATAL(SolverName,"unable to get variable dimensions")
+         ! get variable
+         Var => VariableGet( Model % Mesh % Variables,TRIM(TVarName),UnFoundFatal=.TRUE.)
+         IF(Var % TYPE /= Variable_on_elements) &
+         CALL FATAL(SolverName,'Wrong variable type; use -elem ')
+
+         CALL NCERR( NF90_OPEN(trim(FName),NF90_NOWRITE,ncid), &
+                     "file open failed", SolverName)
+
+         CALL NCERR( NF90_inq_dimid(ncid, 'ncells' , varid), &
+                     "unable to get ncells dim")
+
+         CALL NCERR( NF90_inquire_dimension(ncid,varid,len=ncells), &
+                     "unable to get ncells")
+
+         ! get variable ID
+         CALL NCERR( NF90_inq_varid(ncid,trim(VarName),TVarId), &
+                     "unable to get varid")
+
+         ! variable dimensions
+         CALL NCERR( NF90_inquire_variable(ncid, TVarId, ndims=ndims), &
+                     "unable to get variable dimensions")
       
-      ! if ndim > 1 we should have a time dimension
-      IF (ndims.GT.1) THEN
-        NetCDFstatus = nf90_inq_dimid(ncid, 'time' , varid)
-        IF ( NetCDFstatus /= NF90_NOERR ) &
-           CALL FATAL(SolverName,"unable to get time dimension")
+         ALLOCATE(Values(ncells))
+         Values(:)=0.0_dp
 
-        NetCDFstatus = nf90_inquire_dimension(ncid,varid,len=ntime)
-        IF ( NetCDFstatus /= NF90_NOERR ) &
-           CALL FATAL(SolverName,"unable to get ntime")
+         ! if ndim > 1 we should have a time dimension
+         IF (ndims.GT.1) THEN
+            CALL NCERR( NF90_inq_dimid(ncid, 'time' , varid), &
+                        "unable to get time dimension")
+
+            CALL NCERR( NF90_inquire_dimension(ncid,varid,len=ntime), &
+                        "unable to get ntime")
         
-        ! get time index
-        time = GetTime()
-        dt = GetTimeStepSize()
-        TimeIndex = floor(time-dt/2) + 1
-        TimeIndex = max(1,min(TimeIndex,ntime))
+            ! check ntime lenght
+            IF (ntime > 1) &
+               CALL FATAL(SolverName, &
+                    "E R R O R: more than one time frame in input file")
 
-        ! we have already done this; return
-        IF (SavedTime.EQ.TimeIndex) THEN 
-          NetCDFstatus=nf90_close(ncid)
-          CALL INFO(SolverName,"Nothing to do; return",level=4)
-          RETURN
-        ENDIF
-        SavedTime=TimeIndex
+            ! get time index
+            TimeIndex = 1  ! ntime > 1 not yet managed
+
+            CALL NCERR( NF90_get_var(ncid,TVarId,Values,start=(/1,TimeIndex/),count=(/ncells,1/)), &
+                        "unable to get variable")
+
+            WRITE(Message,'(a,i0)') 'reading time step: ',TimeIndex
+            CALL INFO(SolverName,Message,level=4)
+
+         ELSE
+
+            CALL NCERR(nf90_get_var(ncid,TVarId,Values,start=(/1/),count=(/ncells/)) , &
+                       "unable to get variable", SolverName)
+
+         END IF
+
+         ! close file
+         CALL NCERR(NF90_close(ncid), "unable to close file", SolverName)
+
+         ! set missing values to 0 (no melt)
+         WHERE (Values == -9999._dp)
+            Values = 0.0_dp
+         END WHERE
+
+         ! Compute element area for sanity check
+         ! =====================================
+         
+         ! init
+         rarea_msh = 0.0_dp
+
+         ! allocate Basis (what is Basis ????)
+         M=Model % MaxElementNodes
+         ALLOCATE(Basis(M))
+
+         ! get the number of active element (ie with ice on it ????)
+         NElements = GetNOFActive()
         
-        WRITE(Message,'(a,i0)') 'reading time step: ',TimeIndex
-        CALL INFO(SolverName,Message,level=4)
+         ! allocate
+         ALLOCATE(rarea_elm(NElements))
 
-        NetCDFstatus=nf90_get_var(ncid,TVarId,Values,start=(/1,TimeIndex/),count=(/ncells,1/))
-        IF ( NetCDFstatus /= NF90_NOERR ) &
-          CALL FATAL(SolverName,"unable to get variable")
+         DO i=1,NElements
 
-      ELSE
-        ! we have already done this; return
-        IF (SavedTime.GT.0) THEN
-          NetCDFstatus=nf90_close(ncid)
-          CALL INFO(SolverName,"Nothing to do; return",level=4)
-          RETURN
-        ENDIF
-        SavedTime=+1
+            ! retrive the ith element
+            Element => GetActiveElement(i)
 
-        NetCDFstatus=nf90_get_var(ncid,TVarId,Values,start=(/1/),count=(/ncells/))
-        IF ( NetCDFstatus /= NF90_NOERR ) & 
-          CALL FATAL(SolverName,"unable to get variable")
+            ! get the local index
+            IF (Parallel) THEN 
+               EIndex=Element % GElementIndex
+            ELSE
+               EIndex=Element % ElementIndex
+            ENDIF
+
+            ! ????
+            IntegStuff = GaussPoints( Element )
+
+            ! get nodes for a specific element
+            CALL GetElementNodes( ElementNodes,Element)
+    
+            ! loop over each GaussPoints (nodes ????) in the Elements
+            DO inode = 1,IntegStuff % n
+    
+               ! ???? what is U,V,W,S
+               U = IntegStuff % u(inode)
+               V = IntegStuff % v(inode)
+               W = IntegStuff % w(inode)
+               S = IntegStuff % s(inode)
+    
+               ! get Element info
+               zstat = ElementInfo(Element,ElementNodes,U,V,W,SqrtElementMetric, Basis)
+
+               ! retreive Sqrt (???) Element metrics 
+               rarea_elm(i)=rarea_elm(i)+SqrtElementMetric*S
+            END DO
+
+          END DO
+ 
+          ! compute total area
+          rarea_msh = SUM(rarea_elm)
+    
+          ! global area mean
+          IF (Parallel) THEN
+             CALL MPI_ALLREDUCE(rarea_msh,rtmp,1,MPI_DOUBLE_PRECISION,MPI_SUM,ELMER_COMM_WORLD,ierr)
+             rarea_msh = rtmp
+          ENDIF
+    
+          DEALLOCATE(Basis)
 
       END IF
 
-      ! close file
-      NetCDFstatus=nf90_close(ncid)
-
       ! FILL ELMER VARIABLE
       ! ===================
+
+      ! init     
+      rmlt_msh = 0.0_dp
+ 
+      ! get melt variable      
+      Var => VariableGet( Model % Mesh % Variables,TRIM(TVarName),UnFoundFatal=.TRUE.)
+      Var % Values(:) = 0.0_dp
+
+      ! get grounded mask in case needed
+      GMVar => VariableGet(Solver%Mesh%Variables,'GroundedMask',UnfoundFatal=.TRUE.)
 
       ! get the number of active element (ie with ice on it ????)
       NElements = GetNOFActive()
@@ -196,85 +296,51 @@
          ENDIF
 
          ! fill the output variable
-         Var % Values(Var % Perm(Element % ElementIndex))=Values(EIndex)
+         zmlt = Values(EIndex)
+
+         ! mask data if asked in sif
+         IF ( lmask ) THEN
+            ! get element node index
+            NodeIndexes => Element % NodeIndexes
+
+            ! mask data if any of the nodes > mskcrit
+            IF ( MAXVAL( GMVar % Values(GMVar % Perm(NodeIndexes(:)) ) ) .GE. mskcrit ) &
+               zmlt = 0.0
+         END IF
+
+         ! sanity check
+         rmlt_msh = rmlt_msh + zmlt * rarea_elm(i)
+
+         ! Fill Var values ready for Elmer
+         Var % Values(Var % Perm(Element % ElementIndex)) = zmlt
 
       END DO
 
-      ! SANITY CHECK
-      ! ============
-
-      ! total melt and area init
-      rmlt_msh=0.0_dp
-      rarea_msh = 0.0_dp
-
-      ! allocate Basis (what is Basis ????)
-      M=Model % MaxElementNodes
-      ALLOCATE(Basis(M))
-
-      ! get the number of active element (ie with ice on it ????)
-      NElements = GetNOFActive()
-      DO i=1,NElements
-
-        ! retrive the ith element
-        Element => GetActiveElement(i)
-
-        ! get the local index
-        IF (Parallel) THEN 
-          EIndex=Element % GElementIndex
-        ELSE
-          EIndex=Element % ElementIndex
-        ENDIF
-
-        ! ????
-        IntegStuff = GaussPoints( Element )
-
-        ! get nodes for a specific element
-        CALL GetElementNodes( ElementNodes,Element)
-
-        ! loop over each GaussPoints (nodes ????) in the Elements
-        rarea_elm = 0.0_dp
-        DO inode = 1,IntegStuff % n
-
-           ! ???? what is U,V,W,S
-           U = IntegStuff % u(inode)
-           V = IntegStuff % v(inode)
-           W = IntegStuff % w(inode)
-           S = IntegStuff % s(inode)
-
-           ! get Element info
-           zstat = ElementInfo(Element,ElementNodes,U,V,W,SqrtElementMetric, Basis)
-
-           ! retreive Sqrt (???) Element metrics 
-           zwgt=SqrtElementMetric*S
-           
-           ! increment cell area with ????? I don't know
-           rarea_elm = rarea_elm + zwgt
-        END DO
-
-        ! compute total area
-        rarea_msh = rarea_msh + rarea_elm
-
-        ! if melt -9999 (ie missing value, set it to 0)
-        IF (Values(EIndex) .NE. -9999._dp) THEN
-        rmlt_elm = Values(EIndex) * rarea_elm
-        ELSE
-           rmlt_elm = 0.0_dp
-        END IF
-
-        ! compute total melt
-        rmlt_msh = rmlt_msh + rmlt_elm
-
-      END DO
-
+      ! sanity check
       IF (Parallel) THEN
          CALL MPI_ALLREDUCE(rmlt_msh,rtmp,1,MPI_DOUBLE_PRECISION,MPI_SUM,ELMER_COMM_WORLD,ierr)
          rmlt_msh = rtmp
-         CALL MPI_ALLREDUCE(rarea_msh,rtmp,1,MPI_DOUBLE_PRECISION,MPI_SUM,ELMER_COMM_WORLD,ierr)
-         rarea_msh = rtmp
       END IF
-      PRINT *, rmlt_msh/1000._dp*365._dp*86400._dp/1.0e9, rarea_msh/1e6
 
-      DEALLOCATE(Values)
-
+      CALL INFO(SolverName,'',Level=1)
+      CALL INFO(SolverName,'--------------------------',Level=1)
+      WRITE(Message,'(a,f12.4,f12.4)') 'BMELT [Gt/y], AREA [1e6 km2] = ', rmlt_msh*0.917_dp/1.0e9, rarea_msh/1e6/1e6
+      CALL INFO(SolverName,Message,Level=1)
+      CALL INFO(SolverName,'--------------------------',Level=1)
+      CALL INFO(SolverName,'',Level=1)
 
       END SUBROUTINE READ_CELL_NETCDF
+
+      SUBROUTINE NCERR(istatus,cmessage, csolvername)
+
+         USE DefUtils
+         USE NETCDF
+
+         IMPLICIT NONE
+
+         CHARACTER(LEN=256), INTENT(in) :: cmessage, csolvername
+         INTEGER           , INTENT(in) :: istatus
+         IF ( istatus /= NF90_NOERR ) &
+            CALL FATAL(csolvername,TRIM(cmessage))
+
+      END SUBROUTINE
