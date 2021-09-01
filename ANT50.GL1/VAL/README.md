@@ -40,7 +40,7 @@ usage: valelmer.py [-h] -runid runid list [runid list ...]
 ```
 python valelmer.py -runid ANT50.GL1-EPM007 ANT50.GL1-EPM008 ANT50.GL1-EPM009 ANT50.GL1-EPM010 ANT50.GL1-EPM011 -basin 00 -dir /scratch/cnt0021/egi6035/pmathiot/ELMER/ANT50.GL1/ -o test_00.png
 ```
-![Exemple output] (test_00.png)
+![Exemple output](test_00.png)
 
 ## Tuning
 - If your basin file is different, you need to update the *basin_elmer.yml* file
