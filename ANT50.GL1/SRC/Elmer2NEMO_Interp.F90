@@ -116,7 +116,9 @@
       LOGICAL :: lfile                  ! GRID_FILE presence flag
       LOGICAL,SAVE :: FirstTime=.TRUE.
 
-      PRINT *, 'After simulation : Interpol file'
+      CALL INFO(SOLVERNAME,'',Level=1)
+      CALL INFO(SOLVERNAME,'Interpol file to NEMO grid',Level=1)
+      CALL INFO(SOLVERNAME,'--------------------------',Level=1)
 
       ! Parallel run
       Parallel=(ParEnv % PES > 1)
@@ -134,6 +136,8 @@
        SolverParams => GetSolverParams()
        GRID_FILE=ListGetString(SolverParams,'Input File',UnFoundFatal=.TRUE.)
        OUTPUT_FILE=ListGetString(SolverParams,'OutPut File',UnFoundFatal=.TRUE.)
+       CALL INFO(SOLVERNAME,'Output File : '//OUTPUT_FILE,Level=1)
+       CALL INFO(SOLVERNAME,'',Level=1)
 
       ! get variables to interpolate
        nvar = 0

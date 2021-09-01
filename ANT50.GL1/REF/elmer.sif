@@ -43,7 +43,6 @@ Simulation
 
   Restart File = "<RSTFILEb>"
   Restart Position = 0
-  Restart Time = Real 0.0
 
   max output level = 3
 End
@@ -253,7 +252,7 @@ Solver 6
   Equation = "Save Scalars"
    Procedure = File "SaveData" "SaveScalars"
 
-   Filename = File "Scalars_"$name$".dat"
+   Filename = File "$name$_$id$_scalars.dat"
   Parallel Reduce = logical True
 
   Variable 1 = "Time"
@@ -312,7 +311,7 @@ Solver 7
 
 
    Exported Variable 1 = -dofs 1 -elem IceDischarge
-   File Name = File "INITMIP_Scalar_OUTPUT_"$name$".dat"
+   File Name = File "INITMIP_Scalar_OUTPUT_$name$_$id$.dat"
 End
 
 !#

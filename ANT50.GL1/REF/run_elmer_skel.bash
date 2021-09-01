@@ -63,9 +63,11 @@ if [[ $RUNSTATUS == 0 ]]; then
 
    # mv data to S dir
    echo ''
-   echo "mv vtu to $SELMER"
-   mv MSH/$CONFIG-${CASE}_${i}_??np??_t????.vtu $SELMER/. || nerr=$((nerr+1))
-   mv MSH/$CONFIG-${CASE}_${i}_t????.pvtu       $SELMER/. || nerr=$((nerr+1))
+   echo "mv vtu and dat to $SELMER"
+   mv MSH/$CONFIG-${CASE}_${i}_??np??_t????.vtu        $SELMER/. || nerr=$((nerr+1))
+   mv MSH/$CONFIG-${CASE}_${i}_t????.pvtu              $SELMER/. || nerr=$((nerr+1))
+   mv $CONFIG-${CASE}_${i}_scalars.dat*                $SELMER/. || nerr=$((nerr+1))
+   mv *INITMIP_Scalar_OUTPUT_$CONFIG-${CASE}_${i}.dat* $SELMER/. || nerr=$((nerr+1))
 
    # cp restart to RST dir
    echo "cp result to $RELMER"

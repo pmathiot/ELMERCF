@@ -41,7 +41,8 @@ SUBROUTINE Flotation2( Model,Solver,dt,Transient )
   TYPE(ValueList_t),POINTER :: BodyForce, Material, Params, BC
 
   REAL(KIND=dp),DIMENSION(:),ALLOCATABLE,SAVE :: Density
-  REAL(KIND=dp) :: zsea,rhow,rhoi
+  REAL(KIND=dp), SAVE :: zsea,rhow
+  REAL(KIND=dp) :: rhoi
   REAL(KIND=dp) :: H,zb,zs,bedrock
   REAL(KIND=dp),PARAMETER :: EPS=0.1_dp
 
@@ -57,14 +58,15 @@ SUBROUTINE Flotation2( Model,Solver,dt,Transient )
   LOGICAL :: CalvingFront
 
   CHARACTER(LEN=MAX_NAME_LEN) :: SolverName='Flotation'
-  CHARACTER(LEN=MAX_NAME_LEN) :: ZbName,ZsName,HName
+  CHARACTER(LEN=MAX_NAME_LEN), SAVE :: ZbName,ZsName,HName
 
 #ifndef USE_ISO_C_BINDINGS
   REAL(KIND=dp) :: RealTime,CPUTime
 #endif
-  REAL(KIND=dp) :: at,st,at0,st0
-  INTEGER :: ndow
+  REAL(KIND=dp) :: at,st,at0,st0,ctime_max, rtime_max
+  INTEGER :: ndow, nloop_max
   LOGICAL :: SolverTiming=.TRUE.
+  LOGICAL, SAVE :: Firsttime=.TRUE.
 
 !----------------------------------------------------------------------------
   IF (SolverTiming) THEN
@@ -77,43 +79,76 @@ SUBROUTINE Flotation2( Model,Solver,dt,Transient )
 
   Params => Solver % Values
 
-!!! get required variables Zb,Zs,H
-  ZbName = GetString(Params, 'Bottom Surface Name', GotIt)
-  IF (GotIt) THEN
-    CALL INFO(SolverName, 'Bottom Surface Name found', level=4)
-  ELSE
-    CALL INFO(SolverName, 'Bottom Surface Name not found - using default Zb', level=1)
-    WRITE(ZbName,'(A)') 'Zb'
-  END IF
-  zbVar => VariableGet( Model % Mesh % Variables, ZbName,UnFoundFatal=.TRUE.)
+  ! Initialisation
+  IF (Firsttime) then
+     Firsttime=.FALSE.
+
+     CALL INFO(SolverName, '', level=1)
+     CALL INFO(SolverName, 'Floatation Solver init:', level=1)
+     CALL INFO(SolverName, '-----------------------', level=1)
+
+     ! get required variables name Zb,Zs,H
+     ZbName = GetString(Params, 'Bottom Surface Name', GotIt)
+     IF (GotIt) THEN
+        CALL INFO(SolverName, 'Bottom Surface Name : '//TRIM(ZbName), level=1)
+     ELSE
+        CALL INFO(SolverName, 'Bottom Surface Name not found - using default Zb', level=1)
+        ZbName = 'Zb'
+     END IF
   
-  ZsName = GetString(Params, 'Top Surface Name', GotIt)
-  IF (GotIt) THEN
-    CALL INFO(SolverName, 'Top Surface Name found', level=4)
-  ELSE
-    CALL INFO(SolverName, 'Top Surface Name not found - using default Zs', level=1)
-    WRITE(ZsName,'(A)') 'Zs'
+     ZsName = GetString(Params, 'Top Surface Name', GotIt)
+     IF (GotIt) THEN
+        CALL INFO(SolverName, 'Top Surface Name found : '//TRIM(ZsName), level=1)
+     ELSE
+        CALL INFO(SolverName, 'Top Surface Name not found - using default Zs', level=1)
+        ZsName = 'Zs'
+     END IF
+ 
+     HName = GetString(Params, 'Thickness Variable Name', GotIt)
+     IF (GotIt) THEN
+        CALL INFO(SolverName, 'Thickness Variable Name found : '//TRIM(HName), level=1)
+     ELSE
+        CALL INFO(SolverName, 'Thickness Variable  Name not found - using default H', level=1)
+        HName = 'H'
+     END IF
+
+     ! get constant zsea and rhow
+     zsea = GetCReal( Model % Constants, 'Sea Level', Found )
+     IF (.NOT.Found) THEN
+        WRITE(Message,'(A)') 'Constant >Sea Level< not found : Setting to 0.0'
+        CALL INFO(SolverName, Message, level=1)
+        zsea = 0._dp
+     ELSE
+        WRITE(Message,'(A,f)') 'Constant >Sea Level< not found : ',zsea
+        CALL INFO(SolverName, Message, level=1)
+     END IF
+
+     rhow = GetCReal( Model % Constants, 'Water Density', Found )
+     IF (.NOT.Found) THEN
+        WRITE(Message,'(A)') 'Constant >Water Density< not found : Setting to 1.03225e-18'
+        CALL INFO(SolverName, Message, level=1)
+        rhow = 1.03225d-18
+     ELSE
+        WRITE(Message,'(A,ES12.5)') 'Constant Water Density found : ',rhow
+        CALL INFO(SolverName, Message, level=1)
+     END IF
+     CALL INFO(SolverName, '', level=1)
+
   END IF
+  
+  ! get required variables Zb,Zs,H
+  zbVar => VariableGet( Model % Mesh % Variables, ZbName, UnFoundFatal=.TRUE.)
   zsVar => VariableGet( Model % Mesh % Variables, ZsName,UnFoundFatal=.TRUE.)
+  HVar  => VariableGet( Model % Mesh % Variables, HName, UnFoundFatal=.TRUE.)
 
-  HName = GetString(Params, 'Thickness Variable Name', GotIt)
-  IF (GotIt) THEN
-    CALL INFO(SolverName, 'Thickness Variable Name found', level=4)
-  ELSE
-    CALL INFO(SolverName, 'Thickness Variable  Name not found - using default H', level=1)
-    WRITE(HName,'(A)') 'H'
-  END IF
-  HVar => VariableGet( Model % Mesh % Variables, HName, UnFoundFatal=.TRUE.)
-
-!!
-!! get variables GLMAsk,bedrock
+  ! get variables GLMAsk,bedrock
   GMVar => VariableGet( Model % Mesh % Variables, 'GroundedMask',UnFoundFatal=.TRUE.)
   IF ((ParEnv % PEs>1).AND.(.NOT.ASSOCIATED(Solver%Matrix))) &
        CALL FATAL(SolverName,'Solver%Matrix should be associated to update GLMask')
 
   BedVar => VariableGet( Model % Mesh % Variables, 'bedrock',UnFoundFatal=.TRUE.)
 
-!!! Do some initialisation/allocation
+  ! Do some initialisation/allocation
   IF ((.NOT.Initialized).OR.Mesh%Changed) THEN
 
     IF (Initialized) deallocate(Density)
@@ -127,22 +162,6 @@ SUBROUTINE Flotation2( Model,Solver,dt,Transient )
     Initialized = .TRUE.
   END IF
 !!
-
- zsea = GetCReal( Model % Constants, 'Sea Level', Found )
- If (.NOT.Found) THEN
-    WRITE(Message,'(A)') 'Constant >Sea Level< not found. &
-       &Setting to 0.0'
-    CALL INFO(SolverName, Message, level=3)
-    zsea = 0._dp
- End if
- rhow = GetCReal( Model % Constants, 'water density', Found )
- If (.NOT.Found) THEN
-    WRITE(Message,'(A)') 'Constant Water Density not found. &
-       &Setting to 1.03225e-18'
-    CALL INFO(SolverName, Message, level=3)
-    rhow = 1.03225d-18
- END IF
-
 !! GL is grounded
 ! WHERE(abs(GMVar % Values).LT.EPS) GMVar % Values = +1.0_dp
   !$omp parallel do
@@ -316,9 +335,21 @@ End do
   IF (SolverTiming) THEN
      at=RealTime()
      st=CPUTime()
-     PRINT *,'REAL TIME: ',at-at0
-     PRINT *,'CPU  TIME: ',st-st0
-     PRINT *,'Number of WHILE LOOPS: ',ndow
+     CALL INFO(SolverName, '', level=1)
+
+     CALL MPI_ALLREDUCE( at-at0, rtime_max, 1, MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr )
+     WRITE(Message,'(a,ES12.5)') 'REAL TIME Max [s] : ',rtime_max
+     CALL INFO(SolverName, Message, level=1)
+
+     CALL MPI_ALLREDUCE( st-st0, ctime_max, 1, MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr )
+     WRITE(Message,'(a,ES12.5)') 'CPU  TIME Max [s] : ',ctime_max
+     CALL INFO(SolverName, Message, level=1)
+
+     CALL MPI_ALLREDUCE( ndow, nloop_max, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, ierr )
+     WRITE(Message,'(a,i3)') 'NUMBER of ITERATIONS Max [] : ',nloop_max
+     CALL INFO(SolverName, Message, level=1)
+
+     CALL INFO(SolverName, '', level=1)
   ENDIF
 
 
