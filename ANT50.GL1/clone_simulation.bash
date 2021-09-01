@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne 4 ]; then
-    echo "setup_simulation [CONFIG_REF] [CASE_REF] [CONFIG] [CASE]"
+    echo "clone_simulation [CONFIG_REF] [CASE_REF] [CONFIG] [CASE]"
     exit 42
 fi
 echo ''

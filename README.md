@@ -41,6 +41,13 @@ setup_simulation [CONFIG] [CASE]
 - Step 3: update the following files (.incf, .sif, .param., run_param.bash ...)
 
 ## How to clone an existing simulation
+- Step 0: go in your target configuration directory
+- Step 1: run `./clone_simulation.bash`
+```
+clone_simulation [CONFIG_REF] [CASE_REF] [CONFIG] [CASE]
+```
+- Step 2: go in *CONFIG-CASE* directory
+- Step 3: update the following files (.incf, .sif, .param., run_param.bash ...)
 
 ## How to run a simulation
 - Step 0: update your *run_param.bash*. This file define on what segment to start and end. Length of each segment is defined in the .sif file.
