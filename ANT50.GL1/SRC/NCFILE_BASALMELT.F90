@@ -73,7 +73,7 @@
 
 ! masking
       LOGICAL, SAVE :: lmask, llGL
-      INTEGER, SAVE :: mskcrit
+      REAL(KIND=dp), SAVE :: mskcrit
       TYPE(Variable_t),POINTER :: GMVar
 
 ! sanity check declaration
@@ -114,11 +114,11 @@
          IF ( lmask ) THEN
             llGL=ListGetLogical( Model%Simulation, 'Grounding Line Melt', UnFoundFatal=.TRUE. )
             IF ( llGL ) THEN
-               mskcrit =  0.5 ! Melt is at the Grounding Line and floating points
+               mskcrit =  0.5_dp ! Melt is at the Grounding Line and floating points
                WRITE(Message,'(a)') &
                      '   - Melt at the grounding line'
             ELSE
-               mskcrit = -0.5 ! No melt at the Grounding Line, only floating points
+               mskcrit = -0.5_dp ! No melt at the Grounding Line, only floating points
                WRITE(Message,'(a)') &
                      '   - NO melt at the grounding line'
             ENDIF
