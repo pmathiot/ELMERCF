@@ -8,7 +8,7 @@ VPATH=$(BLD)
 FFLAGS=-O3 
 #FFLAGS=-g -CB -O0
 
-LIBS= USFs_Ronnie_inversion INITMIP_Scalar_OUTPUT Save_Netcdf Flotation2 boxmodel_solver nearestpoint FrontThickness_mask USF_CondFront USF_CondDistance USF_WaterPressure PDC_BASALMELT Elmer2NEMO_Interp NCFILE_BASALMELT Time_Mean
+LIBS= USFs_Ronnie_inversion INITMIP_Scalar_OUTPUT Save_Netcdf Flotation2 boxmodel_solver nearestpoint FrontThickness_mask USF_CondFront USF_CondDistance USF_WaterPressure PDC_BASALMELT Elmer2NEMO_Interp NCFILE_BASALMELT Time_Mean TransientRestartInit USF_ExitCondition
 
 all: $(LIBS)
 
@@ -18,7 +18,7 @@ NCFILE_BASALMELT: $(SRC)/NCFILE_BASALMELT.F90
 Time_Mean:$(SRC)/Time_Mean.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
-USFs_Ronnie_inversion:$(SRC)/USFs_Ronnie_inversion.F90
+TransientRestartInit:$(SRC)/TransientRestartInit.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
 INITMIP_Scalar_OUTPUT:$(SRC)/INITMIP_Scalar_OUTPUT_modif.F90
@@ -46,6 +46,12 @@ USF_CondDistance:$(SRC)/USF_CondDistance.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
 USF_WaterPressure:$(SRC)/USF_WaterPressure.F90
+	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
+
+USF_ExitCondition:${SRC}/USF_ExitCondition.F90
+	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
+
+USFs_Ronnie_inversion:$(SRC)/USFs_Ronnie_inversion.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
 PDC_BASALMELT:$(SRC)/PDC_BASALMELT.F90

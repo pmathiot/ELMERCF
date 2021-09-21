@@ -420,6 +420,7 @@ SUBROUTINE INITMIP_Scalar_OUTPUT( Model,Solver,dt,TransientSimulation )
        NodalMB(1:n) = NodalSMB(1:n) + NodalBMB(1:n)
 
        ! CELL IS NOT ACTIVE ALL H VALUES BELOW MinH Value
+       ! Fabien: Why not set condition on 1/1000(0) Hmin
        IceFree=.FALSE.
        IF (ALL((NodalH(1:n)-MinH(1:n)).LE.tinyDP).AND.ALL(NodalMB(1:n).LT.0._dp)) IceFree=.TRUE.
 
