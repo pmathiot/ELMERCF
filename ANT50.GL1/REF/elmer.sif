@@ -14,8 +14,8 @@ Header
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Constants
-  sea level = Real $zsl
-  water density = Real $rhow
+  Sea Level = Real $zsl
+  Water Density = Real $rhow
   Sea Water Specific heat = Real $cw
   Ice fusion latent heat = Real $Lf 
   Ice density = Real $rhoi
@@ -35,16 +35,21 @@ Simulation
   Timestep Intervals(1) = 5
   Timestep Sizes(1) = 1.0e-2
 
-  Steady State Max Iterations = 2
+  Exit Condition = Variable Time
+     Real Procedure "USF_ExitCondition" "ExitCondition"
+
+  Steady State Max Iterations = 4
   Steady State Min Iterations = 1
-  
+
+  Vtu Time Collection = Logical True
+ 
   OutPut File = "<RSTFILEa>"
   Post File = "$name$_$id$.vtu"
 
   Restart File = "<RSTFILEb>"
   Restart Position = 0
 
-  max output level = 3
+  max output level = 4
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body 1
@@ -173,11 +178,12 @@ Solver 4
 
   include elmer.lsol
 
-  Nonlinear System Max Iterations = 50
+  Nonlinear System Max Iterations = 15
   Nonlinear System Convergence Tolerance  = 1.0e-04
   Nonlinear System Newton After Iterations = 5
   Nonlinear System Newton After Tolerance = 1.0e-04
   Nonlinear System Relaxation Factor = 1.00
+  Nonlinear System Abort Not Converged = Logical True
 
   Sub-Element GL parameterization = Logical True
   GL integration points number = Integer 20
@@ -186,7 +192,9 @@ Solver 4
   Linear System Timing = Logical True
   Linear System Timing Cumulative = Logical True
 !
-    Steady State Convergence Tolerance = 2.0
+    Steady State Convergence Tolerance = 1.0e-3
+
+  velocity norm limit = Real 12000.0
 !
 End
 
@@ -223,10 +231,11 @@ Solver 5
     Nonlinear System Convergence Tolerance  = 1.0e-08
     Nonlinear System Relaxation Factor = 1.00
 !
-    Steady State Convergence Tolerance = 2.0
+    Steady State Convergence Tolerance = 1.0e-6
 !
 
     Stabilization Method = Stabilized
+    Transient Stabilisation = logical true
     Apply Dirichlet = Logical True
 
     Compute dHdT = Logical True
@@ -257,43 +266,42 @@ Solver 6
 
   Variable 1 = "Time"
 
-! area
-   Variable 2 = "H"
-   Operator 2 = "volume"
 ! area grounded
-   Variable 3 = "groundedmask"
-   Operator 3 = "volume"
-   Coefficient 3 = "GroundedAreaCoeff"
+   Variable 2 = "groundedmask"
+   Operator 2 = "volume"
+   Coefficient 2 = "GroundedAreaCoeff"
 
- ! int H = Volume
-  Variable 4 = "H"
+! int H = Volume
+  Variable 3 = "H"
+  Operator 3 = "int"
+
+! int dh/dt = dVolume/dt
+  Variable 4 = "dhdt"
   Operator 4 = "int"
 
- ! int dh/dt = dVolume/dt
-  Variable 5 = "dhdt"
+! int SMB
+  Variable 5 = "smb"
   Operator 5 = "int"
 
-! int SMB
-  Variable 6 = "smb"
+! int Melt
+  Variable 6 = "Melt"
   Operator 6 = "int"
 
-  Variable 7 = "Melt"
-  Operator 7 = "int"
-
 ! SMB_H=Artificial additionnal Mass flux due to limits on H
-  Variable 8 = "h residual"
-  Operator 8 = "sum"
+  Variable 7 = String "h residual"
+  Operator 7 = String "sum"
 
-! OUT Flow
-  Variable 9 = "SSAVelocity"
-  Operator 9 = "convective flux"
-  Coefficient 9 = "Flux"
+! SSA norm
+  Variable 8  = "SSAVelocity"
+  Operator 8  = String "norm"
 
-!=> Dvolume/dt = SMB + SMB_H - OUT
+! H norm
+  Variable 9  = String "H"
+  Operator 9  = String "norm"
 
-  Variable 10 = "dhdt"
-  Operator 10 = "max"
-  Operator 11 = "min"
+! dhdt norm
+  Variable 10 = String "dhdt"
+  Operator 10 = String "norm"
 
 End
 
