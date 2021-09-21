@@ -1,8 +1,20 @@
  runid              |     name          |   line   |   color   |
  ANT50.GL1-EPM000   | DEBUG             | -        | black     |
- ANT50.GL1-EPM007   | DROWN_MSKINI_NOGL | -        | royalblue |
+ ANT50.GL1-EPM007   | DROWN_MSKINI_NOGL | --       | royalblue |
  ANT50.GL1-EPM008   | NOFILL            | -        | chocolate |
  ANT50.GL1-EPM009   | DROWN_MSK_NOGL    | -        | crimson   |
  ANT50.GL1-EPM010   | DROWN_MSK_GL      | -        | navy      |
  ANT50.GL1-EPM011   | DROWN_MSKINI_GL   | -        | purple    |
-
+ ANT50.GL1-EPM100   |                   | -        | purple    |
+ ANT50.GL1-EPM101   |                   | -        | lightgreen |
+ ANT50.GL1-EPM102   |                   | -        | crimson   |
+ ANT50.GL1-EPM103   |                   | -        | navy      |
+ ANT50.GL1-EPM110   |                   | -        | crimson   |
+ ANT50.GL1-EPM111   |                   | -        | navy      |
+ ANT50.GL1-RST1x10  |                   | -        | navy      |
+ ANT50.GL1-RST2x5   |                   | -        | crimson   |
+ ANT50.GL1-RST1x10BDF1  |               | -        | royalblue      |
+ ANT50.GL1-RST2x5BDF1   |               | -        | pink   |
+ ANT50.GL1-RST2x5BDF1BIN   |            | -        | royalblue   |
+ ANT50.GL1-RST2x5BDF2  |                | -        | red   |
+ ANT50.GL1-RST1x10BDF2 |                 | -        | lightblue   |

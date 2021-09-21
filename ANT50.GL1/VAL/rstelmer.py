@@ -16,6 +16,7 @@ print('load functions')
 def load_arguments():
     # deals with argument
     parser = argparse.ArgumentParser()
+    parser.add_argument("-refid", metavar='refid list' , help="used to look information in runid.db", type=str, nargs='+' , required=True )
     parser.add_argument("-runid", metavar='runid list' , help="used to look information in runid.db", type=str, nargs='+' , required=True )
     parser.add_argument("-basin", metavar='basin number', help="basin number"                       , type=str, nargs='+' , required=False, default=['00'] )
     parser.add_argument("-dir"  , metavar='directory of input file' , help="directory of input file", type=str, nargs=1   , required=False, default=['./'])
@@ -67,6 +68,33 @@ def parse_dbbasin():
 
     return cfile_basin,dict_basin
 
+def read_datname(cfile):
+    var=[]
+    with open(cfile) as f:
+        lines = f.readlines()
+        for line in lines:
+            linevar=re.findall( ' *\d\d?: .*' , line)
+            if len(linevar) > 0:
+                var.append(''.join(linevar[0].split(':')[1:]).strip())
+    return var
+
+def read_dat(cfile,varlst,ctime='Time'):
+    files=glob.glob(cfile)
+    data=[]
+    for file in files:
+        df = pd.read_csv(file, header = None, delimiter = '\s+',names=varlst).rename(columns={ctime:'Time'}).set_index('Time')
+        data.append(df)
+    return data
+
+def rundf_to_vardf(runidlst,dflst,keyslst):
+    dict_df={}
+    for ikey,ckey in enumerate(keyslst):
+        df=[]
+        for irunid,runid in enumerate(runidlst):
+            df.append(dflst[irunid][[ckey]].rename(columns={ckey:runid}).sort_index())
+        dict_df[ckey]=pd.concat(df, axis=1)
+    return dict_df
+
 # inputs
 print('load arguments and constants')
 args=load_arguments()
@@ -75,63 +103,69 @@ cdir=args.dir[0]
 
 BASINs=args.basin[:]
 
-RUNIDs=args.runid[:] #['ANT50.GL1-EPM007','ANT50.GL1-EPM008','ANT50.GL1-EPM009','ANT50.GL1-EPM010','ANT50.GL1-EPM011']
+RUNIDs=args.runid[:]
+REFIDs=args.refid[:]
 
 cfile_out=args.o[0]
+   
+plot_keys =['norm dhdt', 'norm h', 'norm ssavelocity', 'int h  mpi_sum', 'int dhdt  mpi_sum','int smb  mpi_sum','int melt  mpi_sum','sum h residual  mpi_sum']
 
-plot_keys =['SMB Flux', 'BMB Flux' , 'Ice Discharge', 'Ice flux at Grounding Line', 'Residual Flux', 'Floating ice area', 'Volume'  , 'Volume rate of change']
+plot_sf   =[ 1.0                ,  1.0            , 1.0         , 1.0, 1.0, 1.0, 1.0, 1.0]
 
-plot_sf   =[1e-9*0.917, -1e-9*0.917,  1e-9*0.917    ,  1e-9*0.917                 ,  1e-9*0.917    ,  1e-6*1e-6         ,  1e-6*1e-9,  1e-9             ]
-
-plot_units=['Gt/y'    , 'Gt/y'     , 'Gt/y'         , 'Gt/y'                      , 'Gt/y'         ,  '1e6 km2'          , '1e6 km3' , 'km3/y']
+plot_units=[ '???'              ,  '???'          , '???'       , '???', '???', '???', '???', '???']
 
 print('load db files')
 # read header
-var=[]
-with open(cdir+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/INITMIP_Scalar_OUTPUT_'+RUNIDs[0]+'_1.dat.names') as f:
-    lines = f.readlines()
-    for line in lines:
-        linevar=re.findall( ' *\d\d?: .*' , line)
-        if len(linevar) > 0:
-            var.append(linevar[0].split(':')[1].strip())
+varsca = read_datname(cdir+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/'+RUNIDs[0]+'_1_scalars.dat.names')
+print(varsca)
 
 # get basin definition
 cfile_basin,dict_basin=parse_dbbasin()
 
-# create dictionary for all var
-dict_df={}
+# style
+plot_sty=[]
+plot_clr=[]
+for runid in RUNIDs:
+    _, runid_name, styline, styclr = parse_dbfile(runid)
+    plot_sty.append(styline)
+    plot_clr.append(styclr)
 
 print('start plotting:')
 # load all the cvs file
 for cbasin in BASINs:
     print('    '+cbasin)
+
+    # load refids
     datadf=[]
-    plot_sty=[]
-    plot_clr=[]
-    for runid in RUNIDs:
-        files=glob.glob(cdir+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
-        data=[]
-        for file in files:
-            df = pd.read_csv(file, header = None, delimiter = '\s+',names=var).set_index('Time')
-            data.append(df)
-        datadf.append(pd.concat(data,axis=0))
-    
-        _, runid_name, styline, styclr = parse_dbfile(runid)
-        plot_sty.append(styline)
-        plot_clr.append(styclr)
+    for runid in REFIDs:
+        datasca = read_dat(cdir+'/'+runid+'/'+runid+'_S/'+runid+'_*_scalars.dat',varsca,'value time scalar variable')
+        df=pd.concat(datasca,axis=0)
+        datadf.append(df)
     
     # transform each run data frame to variable data frame
+    dict_refdf = rundf_to_vardf(REFIDs,datadf,plot_keys)
+ 
+    # load runids
+    datadf=[]
+    for runid in RUNIDs:
+        datasca = read_dat(cdir+'/'+runid+'/'+runid+'_S/'+runid+'_*_scalars.dat',varsca,'value time scalar variable')
+        df=pd.concat(datasca,axis=0)
+        datadf.append(df)
+    
+    # transform each run data frame to variable data frame
+    dict_df = rundf_to_vardf(RUNIDs,datadf,plot_keys)
+
+    # compute differences
     for ikey,ckey in enumerate(plot_keys):
-        df=[]
-        for irunid,runid in enumerate(RUNIDs):
-            df.append(datadf[irunid][[ckey]].rename(columns={ckey:runid}).sort_index()*plot_sf[ikey])
-        dict_df[ckey]=pd.concat(df, axis=1)
-   
+        for runid in RUNIDs:
+            dict_df[ckey][runid]=dict_df[ckey][runid]-dict_refdf[ckey][REFIDs[0]]
+            dict_df[ckey][runid]=dict_df[ckey][runid]*plot_sf[ikey]
+ 
     # plot data
-    fig=plt.figure(figsize=(16,14), dpi= 100, facecolor='w', edgecolor='k')
+    fig=plt.figure(figsize=(16,20), dpi= 100, facecolor='w', edgecolor='k')
     #axes = fig.subplots(3,3)
-    axes=[None]*9
-    fig.suptitle('Elmer monitoring (basin '+dict_basin[cbasin]+')',fontsize=18)
+    axes=[None]*12
+    fig.suptitle('Elmer restart [ref = '+REFIDs[0]+']',fontsize=18)
     count=0
     for r in range(3):
         for c in range(3):
@@ -140,12 +174,11 @@ for cbasin in BASINs:
                 axes[count-1] = fig.add_subplot(3,3,count)
                 ckey=list(dict_df.keys())[count-1]
                 dict_df[ckey].index=dict_df[ckey].index-dict_df[ckey].index.min()
-                dict_df[ckey]=dict_df[ckey].interpolate(limit_area='inside')
-
+                dict_df[ckey]=dict_df[ckey].dropna()#interpolate(limit_area='inside')
                 lg=dict_df[ckey].plot(ax=axes[count-1],legend=False,label=RUNIDs,linewidth=2,fontsize=14,color=plot_clr,style=plot_sty)
                 axes[count-1].set_title(ckey+' ['+plot_units[count-1]+']',fontsize=16)
                 axes[count-1].set_xlabel('')
-                axes[count-1].ticklabel_format(axis='both', style='plain', useOffset=False)
+                #axes[count-1].ticklabel_format(axis='both', style='plain', useOffset=False)
                 axes[count-1].grid(True)
                 ymin=dict_df[ckey].quantile([.01]).min().min()
                 ymax=dict_df[ckey].quantile([.99]).max().max()
@@ -157,7 +190,7 @@ for cbasin in BASINs:
                     axes[count-1].set_xlabel('Time [years]',fontsize=16)
             else:
                 proj = ccrs.Stereographic(central_latitude=-90.0, central_longitude=0.0) 
-                axes[count-1] = fig.add_subplot(3,3,9,projection=proj)
+                axes[count-1] = fig.add_subplot(4,3,12,projection=proj)
                 # read netcdf
                 basin_df=xr.open_dataset(cfile_basin)
                 basin_df=basin_df.where(basin_df.basins == int(cbasin), drop=True)
