@@ -3,6 +3,7 @@
 print('load modules')
 import pandas as pd
 import re
+import os
 import glob
 import matplotlib.pyplot as plt
 import argparse
@@ -16,9 +17,10 @@ print('load functions')
 def load_arguments():
     # deals with argument
     parser = argparse.ArgumentParser()
-    parser.add_argument("-runid", metavar='runid list' , help="used to look information in runid.db", type=str, nargs='+' , required=True )
+    parser.add_argument("-cfg"  , metavar='cfg name'    , help="configuration name"                  , type=str, nargs=1   , required=True )
+    parser.add_argument("-runid", metavar='runid list'  , help="used to look information in runid.db", type=str, nargs='+' , required=True )
     parser.add_argument("-basin", metavar='basin number', help="basin number"                       , type=str, nargs='+' , required=False, default=['00'] )
-    parser.add_argument("-dir"  , metavar='directory of input file' , help="directory of input file", type=str, nargs=1   , required=False, default=['./'])
+    parser.add_argument("-dir"  , metavar='directory of input file' , help="directory of input file", type=str, nargs=1   , required=False, default=[os.environ['SCRATCHDIR']+'/ELMER/'])
     parser.add_argument("-o"    , metavar='figure_name', help="output figure name without extension", type=str, nargs=1   , required=False, default=['output'])
     parser.add_argument("-noshow" , help="do not display the figure (only save it)"                                       , required=False, action="store_true")
     return parser.parse_args()
@@ -73,7 +75,12 @@ args=load_arguments()
 
 cdir=args.dir[0]
 
-BASINs=args.basin[:]
+CONFIG=args.cfg[0]
+
+if args.basin[0] == 'ALL':
+    BASINs=["%.2d" % i for i in range(20)]
+else :
+    BASINs=args.basin[:]
 
 RUNIDs=args.runid[:] #['ANT50.GL1-EPM007','ANT50.GL1-EPM008','ANT50.GL1-EPM009','ANT50.GL1-EPM010','ANT50.GL1-EPM011']
 
@@ -88,7 +95,7 @@ plot_units=['Gt/y'    , 'Gt/y'     , 'Gt/y'         , 'Gt/y'                    
 print('load db files')
 # read header
 var=[]
-with open(cdir+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/INITMIP_Scalar_OUTPUT_'+RUNIDs[0]+'_1.dat.names') as f:
+with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/INITMIP_Scalar_OUTPUT_'+RUNIDs[0]+'_1.dat.names') as f:
     lines = f.readlines()
     for line in lines:
         linevar=re.findall( ' *\d\d?: .*' , line)
@@ -108,8 +115,9 @@ for cbasin in BASINs:
     datadf=[]
     plot_sty=[]
     plot_clr=[]
+    line_name=[]
     for runid in RUNIDs:
-        files=glob.glob(cdir+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
+        files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
         data=[]
         for file in files:
             df = pd.read_csv(file, header = None, delimiter = '\s+',names=var).set_index('Time')
@@ -117,14 +125,16 @@ for cbasin in BASINs:
         datadf.append(pd.concat(data,axis=0))
     
         _, runid_name, styline, styclr = parse_dbfile(runid)
+        line_name.append(runid_name)
         plot_sty.append(styline)
         plot_clr.append(styclr)
-    
+   
+    print(line_name) 
     # transform each run data frame to variable data frame
     for ikey,ckey in enumerate(plot_keys):
         df=[]
         for irunid,runid in enumerate(RUNIDs):
-            df.append(datadf[irunid][[ckey]].rename(columns={ckey:runid}).sort_index()*plot_sf[ikey])
+            df.append(datadf[irunid][[ckey]].rename(columns={ckey:line_name[irunid]}).sort_index()*plot_sf[ikey])
         dict_df[ckey]=pd.concat(df, axis=1)
    
     # plot data
@@ -142,10 +152,11 @@ for cbasin in BASINs:
                 dict_df[ckey].index=dict_df[ckey].index-dict_df[ckey].index.min()
                 dict_df[ckey]=dict_df[ckey].interpolate(limit_area='inside')
 
-                lg=dict_df[ckey].plot(ax=axes[count-1],legend=False,label=RUNIDs,linewidth=2,fontsize=14,color=plot_clr,style=plot_sty)
+                lg=dict_df[ckey].plot(ax=axes[count-1],legend=False,label=line_name,linewidth=2,fontsize=14,color=plot_clr,style=plot_sty)
                 axes[count-1].set_title(ckey+' ['+plot_units[count-1]+']',fontsize=16)
                 axes[count-1].set_xlabel('')
-                axes[count-1].ticklabel_format(axis='both', style='plain', useOffset=False)
+                #axes[count-1].ticklabel_format(axis='both', style='plain', useOffset=False)
+                axes[count-1].ticklabel_format(axis='y', style='sci', scilimits=(0,0), useOffset=False)
                 axes[count-1].grid(True)
                 ymin=dict_df[ckey].quantile([.01]).min().min()
                 ymax=dict_df[ckey].quantile([.99]).max().max()

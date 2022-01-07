@@ -12,5 +12,8 @@ STARTITER=1
 ENDITER=1
 
 # restart path and rst file (assume all in $IELMER)
-RSTINITpath=${IELMER}/RST/OPTIM_VEL_R15_48part
-RSTINITfile=OPTIM_R15_24to48.result
+RSTINITpath=${IELMER}/RST_simplified2/NEWMESH_48part/
+RSTINITfile=NEWMESH.result
+
+# MSH path and file
+MSHINITpath=${IELMER}/MSH_simplified2/

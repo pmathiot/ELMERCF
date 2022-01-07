@@ -244,7 +244,7 @@ SUBROUTINE boxmodel_solver( Model,Solver,dt,Transient )
   distIF => distIFVar % Values
 
   VisitedNode=0.0_dp
-  
+  Boxnumber(:)=0.0_dp
   totalmelt=0.0_dp
   Abox(:,:)=0.0_dp
   Zbox(:,:)=0.0_dp

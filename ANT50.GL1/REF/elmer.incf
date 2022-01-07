@@ -22,5 +22,9 @@ $file_elmertonemo = "ELMER_<CONFIG>_to_eORCA025_coord_c3.0.nc"
 $file_basins = "schmidtko_initmip8km_means.nc"
 !
 ! define bmb file
-$file_bmb = "melt_cons.nc"
+$file_bmb = "MELT_simplified2/ANT50.GL1_isfmelt_eORCA025.L121-OPM021_y1985.10y_drown_GL.nc"
 $var_bmb = "sowflisf_cav"
+!
+! define smb file
+$file_smb = "SMB/racmo_wessem_initmip8km_mean1995_2014_smbice.nc"
+$var_smb = "SMB"

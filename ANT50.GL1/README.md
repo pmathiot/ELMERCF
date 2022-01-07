@@ -24,3 +24,11 @@
 - The ice shelf melt comes from the NEMO eORCA025.L121-OPM021 simulation over period 1985-1995 drowned and masked at every time step by the current grounded mask (melt at GL)
 ### ANT50.GL1-EPM011
 - The ice shelf melt comes from the NEMO eORCA025.L121-OPM021 simulation over period 1985-1995 drowned and masked by the initial grounding mask (mask constant in time) with melt at GL. 
+
+After analysed of the previous simulation, some change has been made in the sif for a better convergence.
+   - a velocity limiter (mostly active on Antarctic Peninsula glacier)
+   - more steady state iteration
+   - ssa and h steady state convergence tolerance
+
+### ANT50.GL1-EPM120
+- The ice shelf melt comes from the NEMO eORCA025.L121-OPM021 simulation over period 1985-1995 drowned and masked by the initial grounding mask (mask constant in time) with melt at GL.

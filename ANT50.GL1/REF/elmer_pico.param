@@ -25,3 +25,19 @@ $Lf = Lf_SI * yearinsec^2
 $rhow = rhosw_SI/(1.0e6*yearinsec^2)
 $cw= cpw_SI*yearinsec^2.0
 $gravity = -grav_SI*yearinsec^2.0
+
+!###################### PICO ####################
+!- specific to melt parameterizations :
+$meltfac    = rhosw_SI * cpw_SI / ( rhoi_SI * Lf_SI )
+
+$Nbox_PICO       = 5                     ! nb of boxes in PICO
+$gammaT_PICO_SI  = 5.5e-5                ! gamma_T_star in Reese et al. (m/s) in [5.e-6;1.e-4]
+$C_PICO_SI       = 2.0e6                   ! Circulation parameter C (Sv) in [0.1;9]
+$alpha_PICO      = 7.5e-5              ! Thermal expansion coefficient for linear EOS (K^-1)
+$beta_PICO       = 7.7e-4              ! Salinity contraction coefficient for linear EOS (psu^-1)
+$rhostar_SI_PICO = 1027.51               ! In situ density for linear EOS (kg/m3)
+
+
+$gammaT_PICO = gammaT_PICO_SI * yearinsec
+$C_PICO = C_PICO_SI * (1.0e6*yearinsec^2) * yearinsec
+$rhostar_PICO = rhostar_SI_PICO / (1.0e6*yearinsec^2)
