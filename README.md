@@ -27,10 +27,6 @@ On Occigen, here are the modules I used:
 - Step 1: add your solver in the *Makefile* (solver.F90 in SRC/.)
 - Step 2: `make`
 
-## How to setup a new configuration
-
-## How to clone an existing configuration
-
 ## How to setup a new simulation
 - Step 0: go in your configuration directory
 - Step 1: run `./setup_simulation.bash`
