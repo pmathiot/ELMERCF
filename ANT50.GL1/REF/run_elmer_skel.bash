@@ -1,57 +1,47 @@
 #!/bin/bash
-#SBATCH -J <NAME>
-
-#SBATCH --nodes=<NNODES>
-#SBATCH --constraint=HSW24
-
-#SBATCH --ntasks=<NTASKS>
-#SBATCH --ntasks-per-node=24
-#SBATCH --threads-per-core=1
-#SBATCH --cpus-per-task=1
-
-#SBATCH --time=0:20:00
-
-#SBATCH --output LOG/<NAME>.o%j
-#SBATCH --error  LOG/<NAME>.e%j
-
-#multi-threads
-export OMP_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-export KMP_AFFINITY=granularity=fine,compact,1,0,verbose
-
-module load intel/19.4
-module load cmake/3.9.0
-
-module load netcdf/4.6.3-intel-19.0.4-intelmpi-2019.4.243
-module load netcdf-fortran/4.4.4-intel-19.0.4-intelmpi-2019.4.243
-
-module load mumps/5.2.1-intel-19.0.4-intelmpi-2019.4.243
-module load mkl/19.4
-
-module load /scratch/cnt0021/egi6035/pmathiot/ELMER/Elmer_Benoit_20210401/elmerfem-64255215
-
 ulimit -s unlimited
 
-cd <WORKDIR>
-
-echo <SIF> > ELMERSOLVER_STARTINFO
-
-i=<RUNID>
+# INPUTS
+# segment number
+i=<ID>
+# restart name
+RSTFILEb=<RSTFILEb>
+# conf case
 CONFIG=<ECONFIG>
 CASE=<ECASE>
-RSTFILEb=<RSTFILEb>
 
-# path
-RELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_R
-SELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_S
-WELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_WORK
+# load arch parameter
+. ./param_arch.bash
 
+# load modules
+load_elmer_modules
+
+# 
+echo ''
+echo "run Elmer/Ice in $WELMER"
+echo ''
+cd $WELMER
+
+# manage sif info
+echo "sif use is : elmer_t${i}.sif"
+if [ ! -f elmer_t${i}.sif ] ; then echo "E R R O R: sif file missing"; exit 42; fi
+echo elmer_t${i}.sif > ELMERSOLVER_STARTINFO
+
+# manage restart
 if [[ $i -gt 1 ]] && [[ ! -f $WELMER/${RSTFILEb}.0 ]]; then
    echo '$WELMER/${RSTFILEb}.0 is missing, we pick it up from $RELMER'
-   cp -f $RELMER/${RSTFILEb}.* $WELMER/MSH/.
+   cp -f $RELMER/${RSTFILEb}.* $WELMER/MSH/. || nerr=$((nerr+1))
+
+   if [[ $nerr -ne 0 ]] ; then
+   echo 'ERROR during copying restart file; please check'
+   touch zERROR_pp_${i}
+   exit 42
+   fi
+ 
 fi
 
-srun --mpi=pmi2 -K1 --resv-ports -n $SLURM_NTASKS ElmerSolver_mpi
+# run elmer (see function in param_hpc.bash)
+run_elmer
 
 # post processing
 RUNSTATUS=$?
@@ -76,11 +66,13 @@ if [[ $RUNSTATUS == 0 ]]; then
 else
 
    echo 'ELMER failed, exit 42'
+   touch zERROR_elmer_${i}
    exit 42
 
 fi
 
 if [[ $nerr -ne 0 ]] ; then
    echo 'ERROR during copying output file/results; please check'
+   touch zERROR_pp_${i}
    exit 42
 fi

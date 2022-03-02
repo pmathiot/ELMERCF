@@ -2,9 +2,12 @@
 CONFIG=<CONFIG>
 CASE=<CASE>
 
-WELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_WORK
-RELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_R
-IELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-I
+# check if error fix or not
+#if [ -f zERROR_*_* ]; then echo ' ERROR files still there. rm zERROR_*_* files if you fixed it before re-run'; exit 42; fi
+
+# source arch file
+. param_arch.bash
+
 
 . run_param.bash
 
@@ -14,7 +17,7 @@ echo "=========================="
 echo ''
 # to clean this we could find a way to check only what is needed in the sif file
 # like this workdir only contains what is needed
-cp ../BLD/* $WELMER/.
+cp MY_BLD/* $WELMER/.
 
 # copy sif and param
 echo ''
@@ -63,26 +66,25 @@ do
     sed -e "s/<ID-1>/$(($i-1))/g"     \
         -e "s/<ID>/$(($i))/g"         \
         -e "s/<RSTFILEb>/$RSTFILEb/g" \
-        -e "s/<RSTFILEa>/$RSTFILEa/g" $CONFIG-${CASE}_elmer.sif  > $WELMER/elmer_t$i.sif 
+        -e "s/<RSTFILEa>/$RSTFILEa/g" ${NAME}_elmer.sif  > $WELMER/elmer_t$i.sif 
 
     # prepare run script
-    sed -e "s!<NAME>!${NAME}_$i!g"     \
-        -e "s!<NNODES>!${NN}!g"        \
-        -e "s!<NTASKS>!${NP}!g"        \
-        -e "s!<WORKDIR>!$WELMER!g"     \
-        -e "s!<SIF>!elmer_t$i.sif!g"   \
-        -e "s!<ECONFIG>!$CONFIG!g"     \
-        -e "s!<ECASE>!$CASE!g"         \
-        -e "s!<RSTFILEb>!$RSTFILEb!g"  \
-        -e "s!<RUNID>!${i}!"           run_elmer_skel.bash > run_elmer_${i}.slurm
+    sed -e "s!<NAME>!${NAME}_$i!g"       \
+        -e "s!<NNODES>!${NN}!g"          \
+        -e "s!<NTASKS>!${NP}!g"        run_arch.slurm > run_elmer_${i}.slurm
+
+    sed -e "s!<RSTFILEb>!$RSTFILEb!g"    \
+        -e "s!<ECONFIG>!$CONFIG!g"       \
+        -e "s!<ECASE>!$CASE!g"           \
+        -e "s!<ID>!${i}!"           run_elmer_skel.bash >> run_elmer_${i}.slurm
 
     # submit job
     if [ ! -z "$jobid0" ];then
-        jobid=$(sbatch --parsable --dependency=afterok:$jobid0  run_elmer_$i.slurm)
+        jobid=$(submit_elmer_dependency $jobid0)
         echo "        id        : $jobid"
         echo "        dependency: $jobid0"
     else
-        jobid=$(sbatch --parsable run_elmer_$i.slurm)
+        jobid=$(submit_elmer)
         echo "        id        : $jobid"
     fi
     jobid0=$jobid

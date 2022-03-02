@@ -1,26 +1,9 @@
 # ELMER CONFIGURATION MANAGER
 
-## Requierement
+## Requirement
 The following modules are needed to compile and run Elmer:
 - elmerfem
 - netcdf-fortran
-- mumps
-
-On Occigen, here are the modules I used:
-```
-  1) c/intel/.19.4
-  2) c++/intel/.19.4
-  3) fortran/intel/.19.4
-  4) mkl/19.4
-  5) idb/19.4
-  6) intel/19.4
-  7) cmake/3.9.0
-  8) netcdf/4.6.3-intel-19.0.4-intelmpi-2019.4.243
-  9) netcdf-fortran/4.4.4-intel-19.0.4-intelmpi-2019.4.243
- 10) mumps/5.2.1-intel-19.0.4-intelmpi-2019.4.243
- 11) cdo/1.7.2-gcc-4.8.5-hdf5-1.8.18-openmpi-2.0.4-smp
- 12) /scratch/cnt0021/egi6035/pmathiot/ELMER/Elmer_Benoit_20210401/elmerfem-64255215
-```
 
 ## How to compile solver
 - Step 0: go in your configuration directory
@@ -29,12 +12,21 @@ On Occigen, here are the modules I used:
 
 ## How to setup a new simulation
 - Step 0: go in your configuration directory
-- Step 1: run `./setup_simulation.bash`
+- Step 1: run `./setup_arch.bash your_computer` (it is likely you will have to edit: `REF/param_arch.bash`)
+```
+usage: setup_arch.bash [COMPUTER (irene)]
+```
+- Step 2: run `./setup_simulation.bash`
 ```
 setup_simulation [CONFIG] [CASE]
 ```
-- Step 2: go in *CONFIG-CASE* directory
-- Step 3: update the following files (.incf, .sif, .param., run_param.bash ...)
+- Step 3: go in *CONFIG-CASE* directory
+- Step 4: update the following files (.incf, .sif, .param., run_param.bash ...)
+
+### If arch not available
+To be able to run ELMER_CM with a new architecture, you need to:
+- Step 1: create `../ARCH/run_arch_yourcomputer.slurm` which defines the script header
+- Step 2: create `../ARCH/param_arch_yourcomputer.bash` which defines the arch dependent function (submit script, run elmer and load module)
 
 ## How to clone an existing simulation
 - Step 0: go in your target configuration directory
