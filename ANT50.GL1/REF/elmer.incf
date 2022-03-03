@@ -4,10 +4,10 @@
 $name="<CONFIG>-<CASE>"
 !
 ! define data_dir
-$data_dir = "/scratch/cnt0021/egi6035/pmathiot/ELMER/<CONFIG>/<CONFIG>-I/"
+$data_dir = "<IELMER>/"
 !
 ! define output_dir
-$out_dir = "/scratch/cnt0021/egi6035/pmathiot/ELMER/<CONFIG>/<CONFIG>-<CASE>/<CONFIG>-<CASE>_S/"
+$out_dir = "<SELMER>/"
 !
 ! define build dir
 $bld_dir = "/home/pmathiot/ELMER/<CONFIG>/BLD/"

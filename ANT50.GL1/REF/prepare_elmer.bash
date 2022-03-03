@@ -32,7 +32,7 @@ echo
 # elmer point directly to the data dir => no need to do anything
 # except for the mesh
 if [ ! -d $WELMER/MSH/partitioning.$NP ] ; then mkdir -p $WELMER/MSH/partitioning.$NP ; fi
-ln -sf $IELMER/MSH/partitioning.$NP/part.* $WELMER/MSH/partitioning.$NP/.
+ln -sf $MSHINITpath/partitioning.$NP/part.* $WELMER/MSH/partitioning.$NP/.
 
 echo ''
 echo "$(($ENDITER - $STARTITER + 1)) segment to run"

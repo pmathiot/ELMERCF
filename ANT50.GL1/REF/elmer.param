@@ -1,27 +1,24 @@
 !###################### PHYSICAL ########################
+!
+! define some parameters for the test
 !## From year to seconds
 $yearinsec = 31556926.0
 
-! z sea level
+!## Ice density
+$rhoi = 917.0/(1.0e6*yearinsec^2)
+!## Ice fusion latent heat (0.335×106 J kg−1)
+$Lf=0.335e06*yearinsec^2.0
+
+!## Sea level elevation
 $zsl=0.0
+!## Sea water density
+$rhow = 1027.0/(1.0e6*yearinsec^2)
+!## Specific heat of ocean water (4218 J kg−1 K−1)
+$cw=4218.0*yearinsec^2.0
 
-!- MISMIP+ values :
-$rhofw_SI  = 1000.0             ! Fresh water density (kg/m^3)
-$cpw_SI    = 4218.0             ! Specific heat of sea water (J/kg/K)
-$grav_SI   =    9.81            ! Gravity (m/s^2)
-$rhoi_SI   =  917.0             ! Ice density (kg/m^3)
-$Lf_SI     =    3.35e5          ! Fusion Latent heat of Ice (J/kg)
-$rhosw_SI  = 1027.0             ! Sea water density (kg/m^3)
-$lambda1   =   -0.0573          ! Liquidus slope  (K/psu)
-$lambda2   =    0.0832          ! Liquidus intercept  (K)
-$lambda3   =   -7.53e-8 * grav_SI * rhosw_SI ! Liquidus pressure coefficient  (K/m)
-$n         = 3.0                ! Glen law exponent
+!## gravity
+$gravity = -9.81*yearinsec^2.0
 
-!- conversions to Elmer units:
-$rhofw = rhofw_SI / (1.0e6*yearinsec^2)
-$cpw = cpw_SI  * yearinsec^2
-$rhoi = rhoi_SI/(1.0e6*yearinsec^2)
-$Lf = Lf_SI * yearinsec^2
-$rhow = rhosw_SI/(1.0e6*yearinsec^2)
-$cw= cpw_SI*yearinsec^2.0
-$gravity = -grav_SI*yearinsec^2.0
+!## Glen Exponent
+$n = 3.0
+

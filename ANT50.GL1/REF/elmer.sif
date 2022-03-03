@@ -116,6 +116,23 @@ Solver 1
    Variable 1 data file = File "$data_dir$/$file_basins$"
 End
 
+!! Apply flotaison; from H compute Zb and Zs
+Solver 2
+   Equation = "Flotation"
+   Variable = GroundedMask
+      Procedure = "Flotation2" "Flotation2"
+
+  Exported Variable 1 = bedrock
+  Exported Variable 2 = zs
+  Exported Variable 3 = zb
+  Exported Variable 4 = alpha
+  Exported Variable 5 = mu
+
+!
+    Steady State Convergence Tolerance = 2.0
+!
+End
+
 !#-----------------------------------------------------------------------
 !#                          SMB SOLVER
 !#-----------------------------------------------------------------------
@@ -130,7 +147,7 @@ End
 !#                for other interpolation method change method keyword value
 !#                (see elmerice/Solvers/Documentation/Scattered2DInterpolator.md)
 !#-----------------------------------------------------------------------
-Solver 2
+Solver 3
    Exec Solver = Before simulation
 
    Equation = "ScatteredInter"
@@ -162,7 +179,8 @@ End
 !#                                 * Exported Variable 1
 !#                                 * Bottom Surface Accumulation in Body Force 1
 !#-----------------------------------------------------------------------
-Solver 3
+
+Solver 4
    Equation = "map melt"
    Procedure = "NCFILE_BASALMELT" "NCFILE_BASALMELT"
    Variable = -nooutput "reader1"
@@ -174,24 +192,7 @@ Solver 3
    Target Variable Name = String "Melt"
    Exported Variable 1 = -elem "Melt"
 
-   Mask melt = Logical False
-End
-
-!! Apply flotaison; from H compute Zb and Zs
-Solver 4
-   Equation = "Flotation"
-   Variable = GroundedMask
-      Procedure = "Flotation2" "Flotation2"
-
-  Exported Variable 1 = bedrock
-  Exported Variable 2 = zs
-  Exported Variable 3 = zb
-  Exported Variable 4 = alpha
-  Exported Variable 5 = mu
-
-!
-    Steady State Convergence Tolerance = 2.0
-!
+   Mask melt = Logical True
 End
 
 !#

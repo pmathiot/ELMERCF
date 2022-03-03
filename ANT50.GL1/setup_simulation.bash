@@ -82,7 +82,7 @@ cp REF/run_elmer_skel.bash $RUND/run_elmer_skel.bash || nerr=$((nerr+1))
 # copy reference script to submit elmer
 cp REF/run_param_skel.bash $RUND/run_param.bash || nerr=$((nerr+1))
 # copy and update reference include file
-sed -e "s/<CONFIG>/${CONFIG}/g;s/<CASE>/${CASE}/g" REF/elmer.incf > $RUND/${CONFIG}-${CASE}_elmer.incf || nerr=$((nerr+1))
+sed -e "s/<CONFIG>/${CONFIG}/g;s/<CASE>/${CASE}/g;s!<IELMER>!${IELMER}!g;s!<SELMER>!${SELMER}!g" REF/elmer.incf > $RUND/${CONFIG}-${CASE}_elmer.incf || nerr=$((nerr+1))
 # copy prepare script
 sed -e "s/<CONFIG>/${CONFIG}/g;s/<CASE>/${CASE}/g" REF/prepare_elmer.bash > $RUND/prepare_elmer.bash || nerr=$((nerr+1))
 chmod u+x $RUND/prepare_elmer.bash
