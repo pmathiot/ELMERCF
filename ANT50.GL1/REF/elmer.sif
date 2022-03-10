@@ -31,8 +31,8 @@ Simulation
 
   Timestepping Method = "bdf"
   BDF Order = 2
-  Output Intervals(1) = 500
-  Timestep Intervals(1) = 2500
+  Output Intervals(1) = 5
+  Timestep Intervals(1) = 25
   Timestep Sizes(1) = 2.0e-3
 
   Exit Condition = Variable Time
@@ -376,7 +376,7 @@ End
 !#
 
 Solver 10
-  Exec Solver = After Simulation
+  Exec Solver = Never
   Equation = "Interpolation" !#Eq1
     Procedure = "Elmer2NEMO_Interp" "Elmer2NEMO_Interp"
 

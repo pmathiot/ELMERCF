@@ -22,7 +22,7 @@ if [ -d "$CONFIG-$CASE" ]; then
     exit 42
 fi
 
-if [ ! -d "../${CONFIG_REF}/${CONFIG_REF}-${CASE_REF}" ]; then
+if [ ! -d "../${CONFIG_REF}/SIMU/${CONFIG_REF}-${CASE_REF}" ]; then
     echo "ERROR: reference simulation do not exist"
     exit 42
 fi
@@ -34,39 +34,55 @@ if [ $CONFIG_REF != $CONFIG ]; then
     echo "              especially: elmer.incf"
 fi
 
+# load param arch file
+. REF/param_arch.bash
+
+echo ''
+echo '[1.0] create architecture'
+echo '========================='
+echo ''
+
+if [ -d "$CONFIG-$CASE" ]; then
+    echo "SIMULATION ALREADY EXISTING: " $CONFIG-$CASE
+    echo "ABORT"
+    exit 42
+fi
+
 # init error count
 nerr=0
 
 # Create run dir
-RELMER=./$CONFIG-$CASE/
-mkdir $RELMER || nerr=1
-if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RELMER"; echo ''; exit 42; fi
+RUND=./SIMU/$CONFIG-$CASE/
+mkdir -p $RUND || nerr=1
+if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RUND"; echo ''; exit 42; fi
+
+# Create src dir
+mkdir $RUND/MY_SRC || nerr=1
+if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RUND/MY_SRC"; echo ''; exit 42; fi
+
+# Create bld dir
+mkdir $RUND/MY_BLD || nerr=1
+if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RUND/MY_SRC"; echo ''; exit 42; fi
 
 # Create log dir
-mkdir $RELMER/LOG || nerr=1
-if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RELMER/LOG"; echo ''; exit 42; fi
+mkdir $RUND/LOG || nerr=1
+if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RUND/LOG"; echo ''; exit 42; fi
 
 # Create workdir
-WELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_WORK
 mkdir -p $WELMER || nerr=1
 if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $WELMER"; echo ''; exit 42; fi
 
 # create dtadir
-SELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_S
 mkdir -p $SELMER || nerr=1
 if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $SELMER"; echo ''; exit 42; fi
 
 # create mshdir
-RSTELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_R
-mkdir -p $RSTELMER || nerr=1
-if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RSTELMER"; echo ''; exit 42; fi
+mkdir -p $RELMER || nerr=1
+if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RELMER"; echo ''; exit 42; fi
 
 # Create input dir
-IELMER=$SCRATCHDIR/ELMER/$CONFIG/$CONFIG-I
-if [ ! -d $IELMER ]; then
-   mkdir -p $IELMER || nerr=1
-   if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $IELMER"; echo ''; exit 42; fi
-fi
+mkdir -p $IELMER || nerr=1
+if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $IELMER"; echo ''; exit 42; fi
 
 echo ''
 echo '[1.0] copy files'
@@ -74,32 +90,45 @@ echo '================'
 echo ''
 
 nerr=0
-RELMER_REF=../${CONFIG_REF}/${CONFIG_REF}-${CASE_REF}/
+RUND_REF=../${CONFIG_REF}/SIMU/${CONFIG_REF}-${CASE_REF}/
 # copy reference sif
-cp ${RELMER_REF}/${CONFIG_REF}-${CASE_REF}_elmer.sif $RELMER/${CONFIG}-${CASE}_elmer.sif || nerr=$((nerr+1))
+cp ${RUND_REF}/${CONFIG_REF}-${CASE_REF}_elmer.sif $RUND/${CONFIG}-${CASE}_elmer.sif || nerr=$((nerr+1))
 # copy reference parameter
-cp ${RELMER_REF}/${CONFIG_REF}-${CASE_REF}_elmer.param $RELMER/${CONFIG}-${CASE}_elmer.param || nerr=$((nerr+1))
+cp ${RUND_REF}/${CONFIG_REF}-${CASE_REF}_elmer.param $RUND/${CONFIG}-${CASE}_elmer.param || nerr=$((nerr+1))
 # copy lsol parameter
-cp ${RELMER_REF}/${CONFIG_REF}-${CASE_REF}_elmer.lsol $RELMER/${CONFIG}-${CASE}_elmer.lsol || nerr=$((nerr+1))
+cp ${RUND_REF}/${CONFIG_REF}-${CASE_REF}_elmer.lsol $RUND/${CONFIG}-${CASE}_elmer.lsol || nerr=$((nerr+1))
 # copy reference script to submit elmer
-cp ${RELMER_REF}/run_elmer_skel.bash $RELMER/run_elmer_skel.bash || nerr=$((nerr+1))
+cp ${RUND_REF}/run_elmer_skel.bash $RUND/run_elmer_skel.bash || nerr=$((nerr+1))
 # copy reference script to submit elmer
-cp ${RELMER_REF}/run_param.bash $RELMER/run_param.bash || nerr=$((nerr+1))
+cp ${RUND_REF}/run_param.bash $RUND/run_param.bash || nerr=$((nerr+1))
+# copy slurm header
+cp ${RUND_REF}/run_arch.slurm $RUND/run_arch.slurm || nerr=$((nerr+1))
+# copy arch param
+cp ${RUND_REF}/param_arch.bash $RUND/param_arch.bash || nerr=$((nerr+1))
+
 
 # copy and update reference include file
 sed -e "s/\$name=\"${CONFIG_REF}-${CASE_REF}\"/\$name=\"${CONFIG}-${CASE}\"/g;s!\$out_dir.*!\$out_dir = \"$SELMER\"!g" \
-    ${RELMER_REF}/${CONFIG_REF}-${CASE_REF}_elmer.incf > $RELMER/${CONFIG}-${CASE}_elmer.incf || nerr=$((nerr+1))
+    ${RUND_REF}/${CONFIG_REF}-${CASE_REF}_elmer.incf > $RUND/${CONFIG}-${CASE}_elmer.incf || nerr=$((nerr+1))
 
 # copy prepare script
-sed -e "s/CONFIG=${CONFIG_REF}/CONFIG=${CONFIG}/g;s/CASE=${CASE_REF}/CASE=${CASE}/g" ${RELMER_REF}/prepare_elmer.bash > $RELMER/prepare_elmer.bash || nerr=$((nerr+1))
-chmod u+x $RELMER/prepare_elmer.bash
+sed -e "s/CONFIG=${CONFIG_REF}/CONFIG=${CONFIG}/g;s/CASE=${CASE_REF}/CASE=${CASE}/g" ${RUND_REF}/prepare_elmer.bash > $RUND/prepare_elmer.bash || nerr=$((nerr+1))
+chmod u+x $RUND/prepare_elmer.bash
 if (( $nerr > 0 )); then echo ''; 'E R R O R: one of the files failed to be copied'; echo ''; exit 42; fi
 
 echo ''
-echo '[1.1] compile extra sources'
-echo '==========================='
+echo '[1.1] copy sources and solver'
+echo '============================='
+echo ''
+echo '   no re-compilation as it is a clone'
 echo ''
 
 nerr=0
-make all || nerr=$((nerr+1))
-if (( $nerr > 0 )); then echo ''; echo 'E R R O R: fail to compile extra sources'; echo ''; exit 42; fi
+# copy sources
+cp -r ${RUND_REF}/MY_SRC/* $RUND/MY_SRC/. || nerr=$((nerr+1))
+# copy bld
+cp ${RUND_REF}/MY_BLD/* $RUND/MY_BLD/. || nerr=$((nerr+1))
+
+if (( $nerr > 0 )); then echo ''; echo 'E R R O R: fail to copy extra sources and bin'; echo ''; exit 42; fi
+
+echo 'DONE'

@@ -27,8 +27,8 @@ fi
 nerr=0
 
 # Create run dir
-RUND=./$CONFIG-$CASE/
-mkdir $RUND || nerr=1
+RUND=./SIMU/$CONFIG-$CASE/
+mkdir -p $RUND || nerr=1
 if (( $nerr > 0 )); then echo ''; "E R R O R: cannot create $RUND"; echo ''; exit 42; fi
 
 # Create src dir
