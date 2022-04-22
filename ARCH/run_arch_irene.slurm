@@ -7,8 +7,8 @@
 ######################
 
 #MSUB -r <NAME>
-#MSUB -o LOG/<NAME>.e%j
-#MSUB -e LOG/<NAME>.o%j
+#MSUB -e LOG/<NAME>.e%j
+#MSUB -o LOG/<NAME>.o%j
 #MSUB -n <NTASKS>
 #MSUB -x
 #MSUB -T 1200
@@ -19,6 +19,9 @@
 
 # here are define option specific to irene
 . ~/.bashrc
+
+# change groupe => without this vtu are wrote on ige group => quota exceeded
+newgrp gen6035
 
 # below we instert the generic script to run elmer based on run_elmer_skel.bash
 # done in prepare_elmer.bash
