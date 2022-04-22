@@ -1,15 +1,19 @@
 # ELMER CONFIGURATION MANAGER
 
+## Organisation
+Configurations directory are:
+- ANT50.Gl1: Antarctic configuration
+
+In each configuration directory, you could find:
+- ./: the script to setup new simulation or clone old simulation.
+- REF: contains all the script, sif (...) needed to run the simulation.
+- SRC: the source code on top of the elmer/ice layer needed.
+- 
+
 ## Requirement
 The following modules are needed to compile and run Elmer:
 - elmerfem
 - netcdf-fortran
-
-## How to compile solver
-- Step 0: go in your configuration directory
-- Step 1: add your solver in the *Makefile* (solver.F90 in SRC/.)
-- Step 2: `make`
-
 ## How to setup a new simulation
 - Step 0: go in your configuration directory
 - Step 1: run `./setup_arch.bash your_computer` (it is likely you will have to edit: `REF/param_arch.bash`)
@@ -36,6 +40,11 @@ clone_simulation [CONFIG_REF] [CASE_REF] [CONFIG] [CASE]
 ```
 - Step 2: go in *CONFIG-CASE* directory
 - Step 3: update the following files (.incf, .sif, .param., run_param.bash ...)
+
+## How to compile solver
+- Step 0: go in your configuration directory
+- Step 1: add your solver in the *Makefile* (solver.F90 in SRC/.)
+- Step 2: `make`
 
 ## How to run a simulation
 - Step 0: update your *run_param.bash*. This file define on what segment to start and end. Length of each segment is defined in the .sif file.
