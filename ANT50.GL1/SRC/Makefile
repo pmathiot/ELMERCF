@@ -11,7 +11,7 @@ VPATH=$(BLD)
 
 FFLAGS=-O3 
 
-LIBS= USFs_Ronnie_inversion INITMIP_Scalar_OUTPUT Save_Netcdf Flotation2 boxmodel_solver nearestpoint FrontThickness_mask USF_CondFront USF_CondDistance USF_WaterPressure PDC_BASALMELT Elmer2NEMO_Interp NCFILE_BASALMELT Time_Mean TransientRestartInit USF_ExitCondition
+LIBS= USFs_Ronnie_inversion INITMIP_Scalar_OUTPUT Save_Netcdf Flotation2 boxmodel_solver nearestpoint FrontThickness_mask USF_CondFront USF_CondDistance USF_WaterPressure PDC_BASALMELT Elmer2NEMO_Interp NCFILE_BASALMELT Time_Mean TransientRestartInit USF_ExitCondition SlipCoef SSASolver_coulomb
 
 all: $(LIBS)
 
@@ -60,8 +60,14 @@ USFs_Ronnie_inversion:$(SRC)/USFs_Ronnie_inversion.F90
 PDC_BASALMELT:$(SRC)/PDC_BASALMELT.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
+SlipCoef:$(SRC)/SlipCoef.F90
+	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
+
+SSASolver_coulomb:$(SRC)/SSASolver.F90
+	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
+
 Elmer2NEMO_Interp: $(SRC)/Elmer2NEMO_Interp.F90
-	elmerf90 $(ELMERINC) $^ -o $(BLD)/$@ $(FFLAGS) $(ELMERLIB)
+	elmerf90 -I$(NETCDF_INC_DIR) $^ -o $(BLD)/$@ $(FFLAGS) -L$(NETCDF_LIB_DIR) -lnetcdf -lnetcdff
 
 clean:
 	cd $(BLD) && rm -f $(LIBS)
