@@ -19,10 +19,11 @@ def load_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-cfg"  , metavar='cfg name'    , help="configuration name"                  , type=str, nargs=1   , required=True )
     parser.add_argument("-runid", metavar='runid list'  , help="used to look information in runid.db", type=str, nargs='+' , required=True )
-    parser.add_argument("-basin", metavar='basin number', help="basin number"                       , type=str, nargs='+' , required=False, default=['00'] )
-    parser.add_argument("-dir"  , metavar='directory of input file' , help="directory of input file", type=str, nargs=1   , required=False, default=[os.environ['SCRATCHDIR']+'/ELMER/'])
-    parser.add_argument("-o"    , metavar='figure_name', help="output figure name without extension", type=str, nargs=1   , required=False, default=['output'])
-    parser.add_argument("-noshow" , help="do not display the figure (only save it)"                                       , required=False, action="store_true")
+#    parser.add_argument("-refid", metavar='refid name'  , help="used to look information in runid.db", type=str, nargs=1   , required=False )
+    parser.add_argument("-basin", metavar='basin number', help="basin number"                       , type=str, nargs='+'  , required=False, default=['00'] )
+    parser.add_argument("-dir"  , metavar='directory of input file' , help="directory of input file", type=str, nargs=1    , required=False, default=[os.environ['EDDIR']+'/'])
+    parser.add_argument("-o"    , metavar='figure_name', help="output figure name without extension", type=str, nargs=1    , required=False, default=['output'])
+    parser.add_argument("-noshow" , help="do not display the figure (only save it)"                                        , required=False, action="store_true")
     return parser.parse_args()
 
 # parse style name
@@ -84,6 +85,8 @@ else :
 
 RUNIDs=args.runid[:] #['ANT50.GL1-EPM007','ANT50.GL1-EPM008','ANT50.GL1-EPM009','ANT50.GL1-EPM010','ANT50.GL1-EPM011']
 
+#refid=args.refid[0]
+
 cfile_out=args.o[0]
 
 plot_keys =['SMB Flux', 'BMB Flux' , 'Ice Discharge', 'Ice flux at Grounding Line', 'Residual Flux', 'Floating ice area', 'Volume'  , 'Volume rate of change']
@@ -95,7 +98,7 @@ plot_units=['Gt/y'    , 'Gt/y'     , 'Gt/y'         , 'Gt/y'                    
 print('load db files')
 # read header
 var=[]
-with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/INITMIP_Scalar_OUTPUT_'+RUNIDs[0]+'_1.dat.names') as f:
+with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/Basin_'+runid+'elmer_*.*.365d_INITMIP.dat') as f:
     lines = f.readlines()
     for line in lines:
         linevar=re.findall( ' *\d\d?: .*' , line)
@@ -117,7 +120,9 @@ for cbasin in BASINs:
     plot_clr=[]
     line_name=[]
     for runid in RUNIDs:
-        files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
+#Basin19_eORCA025.L121-EPM026_elmer_20081231.30.365d_INITMIP.dat
+        #files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
+        files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'_'+runid+'elmer_*.*.365d_INITMIP.dat')
         data=[]
         for file in files:
             df = pd.read_csv(file, header = None, delimiter = '\s+',names=var).set_index('Time')
@@ -128,6 +133,18 @@ for cbasin in BASINs:
         line_name.append(runid_name)
         plot_sty.append(styline)
         plot_clr.append(styclr)
+
+    title_ext=''
+#    if args.refid:
+#        refdf=[]
+#        files=glob.glob(cdir+'/'+CONFIG+'/'+refid+'/'+refid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+refid+'_*.dat')
+#        data=[]
+#        for file in files:
+#            df = pd.read_csv(file, header = None, delimiter = '\s+',names=var).set_index('Time')
+#            data.append(df)
+#        refdf.append(pd.concat(data,axis=0))
+#        title_ext=' [diff. with reference '+refid[0]+']'
+#        sys.exit('diff with reference run still in progress')
    
     print(line_name) 
     # transform each run data frame to variable data frame
@@ -141,7 +158,7 @@ for cbasin in BASINs:
     fig=plt.figure(figsize=(16,14), dpi= 100, facecolor='w', edgecolor='k')
     #axes = fig.subplots(3,3)
     axes=[None]*9
-    fig.suptitle('Elmer monitoring (basin '+dict_basin[cbasin]+')',fontsize=18)
+    fig.suptitle('Elmer monitoring (basin '+dict_basin[cbasin]+')'+title_ext,fontsize=18)
     count=0
     for r in range(3):
         for c in range(3):
