@@ -32,7 +32,7 @@ function load_elmer_modules() {
      module load flavor/buildcompiler/intel/19 flavor/buildmpi/openmpi/4.0 flavor/hdf5/parallel
      module load netcdf-c/4.6.0 netcdf-fortran/4.4.4
      module load cmake/3.16.5
-     module load elmerfem/elmer-dev
+     module load ELMER/Elmer_v9.0_r21ddff3a
 
      # add check on elmerf90 et elmersolver_mpi here
 

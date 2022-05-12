@@ -67,7 +67,7 @@ SSASolver_coulomb:$(SRC)/SSASolver.F90
 	elmerf90 $^ -o $(BLD)/$@ $(FFLAGS)
 
 Elmer2NEMO_Interp: $(SRC)/Elmer2NEMO_Interp.F90
-	elmerf90 -I$(NETCDF_INC_DIR) $^ -o $(BLD)/$@ $(FFLAGS) -L$(NETCDF_LIB_DIR) -lnetcdf -lnetcdff
+	elmerf90 $(ELMERINC) $^ -o $(BLD)/$@ $(FFLAGS) $(ELMERLIB) -lnetcdf -lnetcdff
 
 clean:
 	cd $(BLD) && rm -f $(LIBS)
