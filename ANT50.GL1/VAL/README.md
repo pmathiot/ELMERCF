@@ -32,7 +32,7 @@ dependencies:
 python valelmer.py
 
 usage: valelmer.py [-h] -runid runid list [runid list ...]
-                   [-basin basin number] [-dir directory of input file]
+                   [-basin basin number] [-dir directory of input file (optional)]
                    [-o figure_name] [-noshow]
 ```
 
