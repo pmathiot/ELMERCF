@@ -5,6 +5,8 @@ import pandas as pd
 import re
 import os
 import glob
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import argparse
 import sys
@@ -98,7 +100,9 @@ plot_units=['Gt/y'    , 'Gt/y'     , 'Gt/y'         , 'Gt/y'                    
 print('load db files')
 # read header
 var=[]
-with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/Basin_'+runid+'elmer_*.*.365d_INITMIP.dat') as f:
+#with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/Basin_'+RUNIDs[0]+'elmer_*.*.365d_INITMIP.dat') as f:
+#with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/Basin_'+RUNIDs[0]+'elmer_*.*.365d_INITMIP.dat') as f:
+with open(cdir+'/'+CONFIG+'/'+RUNIDs[0]+'/'+RUNIDs[0]+'_S/INITMIP_Scalar_OUTPUT_'+RUNIDs[0]+'_1.dat.names') as f:
     lines = f.readlines()
     for line in lines:
         linevar=re.findall( ' *\d\d?: .*' , line)
@@ -121,8 +125,8 @@ for cbasin in BASINs:
     line_name=[]
     for runid in RUNIDs:
 #Basin19_eORCA025.L121-EPM026_elmer_20081231.30.365d_INITMIP.dat
-        #files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
-        files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'_'+runid+'elmer_*.*.365d_INITMIP.dat')
+        files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'INITMIP_Scalar_OUTPUT_'+runid+'_*.dat')
+        #files=glob.glob(cdir+'/'+CONFIG+'/'+runid+'/'+runid+'_S/Basin'+cbasin+'_'+runid+'elmer_*.*.365d_INITMIP.dat')
         data=[]
         for file in files:
             df = pd.read_csv(file, header = None, delimiter = '\s+',names=var).set_index('Time')

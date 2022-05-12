@@ -1,6 +1,8 @@
 #!/bin/bash
 ulimit -s unlimited
 
+HELMER=<HELMER>
+
 # INPUTS
 # segment number
 i=<ID>
@@ -15,6 +17,9 @@ CASE=<ECASE>
 
 # load modules
 load_elmer_modules
+
+# print status file
+mv ${HELMER}/zELMER_${i}_READY ${HELMER}/zELMER_${i}_IN_PROGRESS
 
 # 
 echo ''
@@ -34,20 +39,17 @@ if [[ $i -gt 1 ]] && [[ ! -f $WELMER/${RSTFILEb}.0 ]]; then
 
    if [[ $nerr -ne 0 ]] ; then
    echo 'ERROR during copying restart file; please check'
-   touch zERROR_pp_${i}
+   mv ${HELMER}/zELMER_${i}_IN_PROGRESS ${HELMER}/zELMER_${i}_ERROR_rst
    exit 42
    fi
- 
 fi
 
 # run elmer (see function in param_hpc.bash)
-run_elmer
+run_elmer ; RUNSTATUS=$?
 
 # post processing
-RUNSTATUS=$?
-echo $RUNSTATUS
 if [[ $RUNSTATUS == 0 ]]; then
-
+   
    # error count
    nerr=0
 
@@ -63,16 +65,20 @@ if [[ $RUNSTATUS == 0 ]]; then
    echo "cp result to $RELMER"
    cp -f MSH/$CONFIG-${CASE}_${i}.result.* $RELMER/.   || nerr=$((nerr+1))
 
+   if [[ $nerr -ne 0 ]] ; then
+      echo 'ERROR during copying output file/results; please check'
+      mv ${HELMER}/zELMER_${i}_IN_PROGRESS ${HELMER}/zELMER_${i}_ERROR_pp
+      exit 42
+   fi
+
 else
 
    echo 'ELMER failed, exit 42'
-   touch zERROR_elmer_${i}
+   mv ${HELMER}/zELMER_${i}_IN_PROGRESS ${HELMER}/zELMER_${i}_ERROR
    exit 42
 
 fi
 
-if [[ $nerr -ne 0 ]] ; then
-   echo 'ERROR during copying output file/results; please check'
-   touch zERROR_pp_${i}
-   exit 42
-fi
+# manage indicator file
+mv ${HELMER}/zELMER_${i}_IN_PROGRESS ${HELMER}/zELMER_${i}_SUCCESSFUL
+touch ${HELMER}/zELMER_$((i+1))_READY

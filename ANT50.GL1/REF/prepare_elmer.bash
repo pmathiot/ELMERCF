@@ -2,14 +2,23 @@
 CONFIG=<CONFIG>
 CASE=<CASE>
 
+HELMER=`pwd`
+
 # check if error fix or not
-#if [ -f zERROR_*_* ]; then echo ' ERROR files still there. rm zERROR_*_* files if you fixed it before re-run'; exit 42; fi
+if [ -f zELMER_*ERROR* ]; then echo ' ERROR files still there. rm zERROR_*_* files if you fixed it before re-run'; exit 42; fi
 
 # source arch file
 . param_arch.bash
 
-
 . run_param.bash
+
+# to fix issue for vtu group gidbit
+chgrp -R ${GROUPUSR} ${WELMER}
+
+# set symbolic link
+ln -s $WELMER MY_WORK
+ln -s $RELMER MY_RESTART
+ln -s $SELMER MY_OUPUT
 
 echo ''
 echo "Copy executable to $WELMER"
@@ -17,7 +26,7 @@ echo "=========================="
 echo ''
 # to clean this we could find a way to check only what is needed in the sif file
 # like this workdir only contains what is needed
-cp MY_BLD/* $WELMER/.
+\cp MY_BLD/* $WELMER/.
 
 # copy sif and param
 echo ''
@@ -71,12 +80,17 @@ do
     # prepare run script
     sed -e "s!<NAME>!${NAME}_$i!g"       \
         -e "s!<NNODES>!${NN}!g"          \
+        -e "s!<GROUPUSR>!${GROUPUSR}!g"  \
         -e "s!<NTASKS>!${NP}!g"        run_arch.slurm > run_elmer_${i}.slurm
 
     sed -e "s!<RSTFILEb>!$RSTFILEb!g"    \
         -e "s!<ECONFIG>!$CONFIG!g"       \
         -e "s!<ECASE>!$CASE!g"           \
+        -e "s!<HELMER>!$HELMER!g"        \
         -e "s!<ID>!${i}!"           run_elmer_skel.bash >> run_elmer_${i}.slurm
+
+    # manage status file
+    if [[ $i == 1 ]];then touch ${HELMER}/zELMER_${i}_READY; fi
 
     # submit job
     if [ ! -z "$jobid0" ];then

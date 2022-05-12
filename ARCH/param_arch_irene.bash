@@ -1,11 +1,14 @@
 #!/bin/bash
 
+# group user 
+GROUPUSR=gen6035
+
 # define keywords
 ELMER_SCRATCHDIR=${CCCSCRATCHDIR}
 ELMER_WORKDIR=${CCCWORKDIR}
+ELMER_HOMEDIR=${CCCHOME}
 
 # define workdir, restart dir, input dir and output dir
-HELMER=${ELMER_HOMEDIR}/ELMER/$CONFIG/$CONFIG-$CASE
 WELMER=${ELMER_SCRATCHDIR}/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_WORK
 RELMER=${ELMER_SCRATCHDIR}/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_R
 IELMER=${ELMER_SCRATCHDIR}/ELMER/$CONFIG/$CONFIG-I
@@ -13,11 +16,19 @@ SELMER=${ELMER_SCRATCHDIR}/ELMER/$CONFIG/$CONFIG-$CASE/$CONFIG-${CASE}_S
 
 ## function to submit elmer script (output must be job id)
 function submit_elmer() {
-    ccc_msub run_elmer_$i.slurm | awk '{print $4}'
+ztmp=`/usr/bin/newgrp $GROUPUSR <<EONG
+    ccc_msub run_elmer_$i.slurm
+EONG
+`
+echo $ztmp | awk '{print $4}'
     }
 
 function submit_elmer_dependency() {
-    ccc_msub -E "--dependency=afterok:$1" run_elmer_$i.slurm | awk '{print $4}'
+ztmp=`/usr/bin/newgrp $GROUPUSR <<EONG
+    ccc_msub -E "--dependency=afterok:$1" run_elmer_$i.slurm
+EONG
+`
+echo $ztmp | awk '{print $4}'
     }
 
 ## function to run elmer:

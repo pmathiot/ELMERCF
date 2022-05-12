@@ -12,7 +12,7 @@
 #MSUB -n <NTASKS>
 #MSUB -x
 #MSUB -T 1200
-#MSUB -A gen6035
+#MSUB -A <GROUPUSR>
 #MSUB -q rome
 #MSUB -m store,work,scratch
 #MSUB -E "--parsable"
@@ -21,7 +21,7 @@
 . ~/.bashrc
 
 # change groupe => without this vtu are wrote on ige group => quota exceeded
-newgrp gen6035
+newgrp <GROUPUSR>
 
 # below we instert the generic script to run elmer based on run_elmer_skel.bash
 # done in prepare_elmer.bash

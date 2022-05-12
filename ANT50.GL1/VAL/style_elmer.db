@@ -1,29 +1,4 @@
  runid              |     name          |   line   |   color   |
- ANT50.GL1-EPM000   | DEBUG             | -        | black     |
- ANT50.GL1-EPM007   | DROWN_MSK_NOGL    | -        | royalblue |
- ANT50.GL1-EPM021   | DROWN_MSK_NOGL_SIMP | --       | royalblue |
- ANT50.GL1-EPM008   | NOFILL            | -        | chocolate |
- ANT50.GL1-EPM022   | NOFILL_SIMP       | --       | chocolate |
- ANT50.GL1-EPM009   | DROWN_MSK_NOGL    | -        | crimson   |
- ANT50.GL1-EPM010   | DROWN_MSK_GL      | -        | navy      |
- ANT50.GL1-EPM011   | DROWN_MSKINI_GL   | -        | purple    |
- ANT50.GL1-EPM100   |                   | -        | purple    |
- ANT50.GL1-EPM101   |                   | -        | lightgreen |
- ANT50.GL1-EPM102   |                   | -        | crimson   |
- ANT50.GL1-EPM103   |                   | -        | navy      |
- ANT50.GL1-EPM110   |                   | -        | crimson   |
- ANT50.GL1-EPM111   |                   | -        | navy      |
- ANT50.GL1-EPM120   | DROWN_CST_GL      | -        | royalblue |
- ANT50.GL1-EPM121   | DROWN_CST_NOGL    | -        | lightblue |
- ANT50.GL1-EPM122   | NOFILL            | -        | crimson   |
- ANT50.GL1-EPM123   | DROWN_GL          | -        | sienna    |
- ANT50.GL1-EPM124   | DROWN_NOGL        | -        | chocolate |
- ANT50.GL1-EPM125   | PICO_GL           | -        | lightgreen |
- ANT50.GL1-EPM126   | PICO_NOGL         | -        | green      |
- ANT50.GL1-RST1x10  |                   | -        | navy      |
- ANT50.GL1-RST2x5   |                   | -        | crimson   |
- ANT50.GL1-RST1x10BDF1  |               | -        | royalblue      |
- ANT50.GL1-RST2x5BDF1   |               | -        | pink   |
- ANT50.GL1-RST2x5BDF1BIN   |            | -        | royalblue   |
- ANT50.GL1-RST2x5BDF2  |                | -        | red   |
- ANT50.GL1-RST1x10BDF2 |                 | -        | lightblue   |
+ ANT50.GL1-DUMMY4   | DUMMY4_TGCC       |     -    |  black    |
+ eORCA025.L121-EPM026 | REF_CPL           | -        | sienna     |
+ eORCA025.L121-EPM031 | PERT_CPL          | -        | crimson    |
