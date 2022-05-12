@@ -12,8 +12,9 @@ In each configuration directory, you could find:
 
 ## Requirement
 The following modules are needed to compile and run Elmer:
-- elmerfem
+- elmer module
 - netcdf-fortran
+
 ## How to setup a new simulation
 - Step 0: go in your configuration directory
 - Step 1: run `./setup_arch.bash your_computer` (it is likely you will have to edit: `REF/param_arch.bash`)
