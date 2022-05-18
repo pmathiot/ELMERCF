@@ -28,6 +28,8 @@ setup_simulation [CONFIG] [CASE]
 - Step 3: go in *CONFIG-CASE* directory
 - Step 4: update the following files (.incf, .sif, .param., run_param.bash ...)
 
+If compilation failed for any reason, you can go in your simulation direction and finalize the compilation by hand (don't forgot to load the module)
+
 ### If arch not available
 To be able to run ELMER_CM with a new architecture, you need to:
 - Step 1: create `../ARCH/run_arch_yourcomputer.slurm` which defines the script header
