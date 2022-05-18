@@ -9,5 +9,5 @@
 - Friction law: Weertman linear
 - Hydrology: None
 - Calving front: fix
-- SMB: MAR averaged 1979-2015
+- SMB: RACMO averaged 1979-2015
 - BMB: NEMO output

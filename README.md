@@ -16,7 +16,7 @@ The following modules are needed to compile and run Elmer:
 - netcdf-fortran
 
 ## How to setup a new simulation
-- Step 0: go in your configuration directory
+- Step 0: go in your configuration directory (ANT50.GL1 for exemple)
 - Step 1: run `./setup_arch.bash your_computer` (it is likely you will have to edit: `REF/param_arch.bash`)
 ```
 usage: setup_arch.bash [COMPUTER (irene)]
@@ -27,6 +27,8 @@ setup_simulation [CONFIG] [CASE]
 ```
 - Step 3: go in *CONFIG-CASE* directory
 - Step 4: update the following files (.incf, .sif, .param., run_param.bash ...)
+
+If compilation failed for any reason, you can go in your simulation direction and finalize the compilation by hand (don't forgot to load the module)
 
 ### If arch not available
 To be able to run ELMER_CM with a new architecture, you need to:
